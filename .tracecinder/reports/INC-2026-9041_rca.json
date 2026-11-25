@@ -1,0 +1,53 @@
+{
+  "incident_id": "INC-2026-9041",
+  "final_tier": "tier_3_multimodal",
+  "severity": "CRITICAL",
+  "summary": "Sudden 500 error spike on /v1/checkout/session during Black Friday flash sale",
+  "root_cause": "Frontend checkout action is blocked waiting on /v1/user/profile response, which crashes with 500 due to unhandled None avatar in commit a8f41bc.",
+  "correlated_diff": {
+    "file": "src/services/user_serializer.py",
+    "lines": "L44-L46"
+  },
+  "visual_finding": "Screenshot shows persistent spinning modal on Checkout button with red toast: 'Payment Failed: Internal Server Error'.",
+  "proposed_remediation": "```python\n- avatar_url: str = profile['avatar_url']\n+ avatar_url: Optional[str] = profile.get('avatar_url') or DEFAULT_AVATAR_PLACEHOLDER\n```",
+  "confidence": 0.99,
+  "total_usage": {
+    "prompt_tokens": 1736,
+    "cached_prompt_tokens": 657,
+    "completion_tokens": 860,
+    "cost_usd": 0.000468
+  },
+  "budget_remaining_usd": 9.99298864,
+  "steps": [
+    {
+      "tier": "tier_1_pulse",
+      "fingerprint": "ERR_AUTH_NULL_AVATAR: TypeError at user_service/serializer.py",
+      "usage": {
+        "prompt_tokens": 773,
+        "cached_tokens": 219,
+        "completion_tokens": 180,
+        "cost_usd": 0.00013288
+      }
+    },
+    {
+      "tier": "tier_2_diff",
+      "fingerprint": "COMMIT_CORRELATION: a8f41bc ('Refactor UserProfile to strict schemas')",
+      "usage": {
+        "prompt_tokens": 590,
+        "cached_tokens": 219,
+        "completion_tokens": 260,
+        "cost_usd": 0.00014657
+      }
+    },
+    {
+      "tier": "tier_3_multimodal",
+      "fingerprint": "MULTIMODAL_CROSS_VALIDATED: UI Checkout Modal Lockup",
+      "usage": {
+        "prompt_tokens": 373,
+        "cached_tokens": 219,
+        "completion_tokens": 420,
+        "cost_usd": 0.00018888
+      }
+    }
+  ]
+}

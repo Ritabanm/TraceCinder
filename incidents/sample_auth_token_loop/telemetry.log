@@ -1,0 +1,8 @@
+2026-11-24T20:15:10.012Z [INFO] [auth-gateway] [trace_id=tr_auth_77a1] Received token verification request for session_bearer_981
+2026-11-24T20:15:10.015Z [WARN] [auth-gateway] [trace_id=tr_auth_77a1] Token expired at 2026-11-24T20:15:00Z. Emitting 401 Unauthorized.
+2026-11-24T20:15:10.025Z [INFO] [auth-gateway] [trace_id=tr_auth_77a2] Received POST /v1/auth/refresh for session_bearer_981
+2026-11-24T20:15:10.030Z [ERROR] [auth-gateway] [trace_id=tr_auth_77a2] Refresh token revoked or reused without rotation lock. Returning HTTP 403.
+2026-11-24T20:15:10.035Z [ERROR] [auth-client] [trace_id=tr_auth_77a3] Frontend interceptor retrying immediately without backoff: attempt 1/10
+2026-11-24T20:15:10.040Z [ERROR] [auth-client] [trace_id=tr_auth_77a4] Frontend interceptor retrying immediately without backoff: attempt 2/10
+2026-11-24T20:15:10.045Z [ERROR] [auth-client] [trace_id=tr_auth_77a5] Frontend interceptor retrying immediately without backoff: attempt 3/10
+2026-11-24T20:15:10.150Z [FATAL] [edge-proxy] [trace_id=tr_auth_77a9] Rate limit exceeded: 429 Too Many Requests. IP 10.42.0.8 blocked for 300s.

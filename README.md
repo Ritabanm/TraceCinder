@@ -61,17 +61,27 @@ Parses arbitrary megabyte log files, identifies anomaly bursts (panics, HTTP 5xx
 
 TraceCinder is designed with zero external dependencies (Python 3.9+ standard library) for immediate verification.
 
-### 1. Run the Showcase Incident Replay
+### 1. Launch the Interactive Web Dashboard (Recommended for Video Demo)
+```bash
+./cinder ui
+```
+Open **`http://localhost:8080`** in your browser to:
+- Inspect the live credit burn rate and prefix cache token savings.
+- Select pre-configured incident bundles or click **"➕ New Custom Triage"** to upload or paste (<kbd>Cmd+V</kbd> / <kbd>Ctrl+V</kbd>) any UI error screenshot.
+- Trigger the 3-tier reasoning escalation loop and review clean, syntax-highlighted code remediation diffs with one-click copying.
+- Compare live triage spend against a naive all-max uncached baseline badge.
+
+### 2. Run the Showcase Incident via Terminal
 ```bash
 ./cinder replay
 ```
 
-### 2. Inspect the Real-Time Budget Ledger
+### 3. Inspect the Real-Time Budget Ledger
 ```bash
 ./cinder budget
 ```
 
-### 3. Triage a Custom Incident
+### 4. Triage a Custom Incident
 ```bash
 ./cinder triage incidents/sample_checkout_break
 ```

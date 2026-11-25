@@ -55,6 +55,7 @@ TASK:
             tier=EscalationTier.PULSE,
             prompt_context=tier1_prompt,
             budget_ledger=self.budget_ledger,
+            incident_id=bundle.incident_id,
         )
         steps.append(step1)
 
@@ -86,6 +87,7 @@ TASK:
             tier=EscalationTier.DIFF_CORRELATOR,
             prompt_context=tier2_prompt,
             budget_ledger=self.budget_ledger,
+            incident_id=bundle.incident_id,
         )
         steps.append(step2)
 
@@ -110,6 +112,7 @@ TASK:
             prompt_context=tier3_prompt,
             budget_ledger=self.budget_ledger,
             image_path=bundle.screenshot_path,
+            incident_id=bundle.incident_id,
         )
         steps.append(step3)
 

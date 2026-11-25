@@ -1,0 +1,9 @@
+{
+  "incident_id": "INC-2026-9042",
+  "service": "auth-gateway",
+  "summary": "Infinite token refresh redirect loop triggering Cloudflare rate-limit",
+  "timestamp": "2026-11-24T20:15:33Z",
+  "log_file": "telemetry.log",
+  "diff_file": "recent.patch",
+  "screenshot_file": "failure_screen.svg"
+}

@@ -1,0 +1,53 @@
+{
+  "incident_id": "INC-2026-9042",
+  "final_tier": "tier_3_multimodal",
+  "severity": "CRITICAL",
+  "summary": "Infinite token refresh redirect loop triggering Cloudflare rate-limit",
+  "root_cause": "Frontend interceptor removed exponential jitter backoff, turning a transient 401 into an unthrottled retry storm that tripped WAF rate-limiting.",
+  "correlated_diff": {
+    "file": "src/client/token_interceptor.ts",
+    "lines": "L27-L29"
+  },
+  "visual_finding": "Screenshot confirms user locked out with Cloudflare '429 Too Many Requests' badge citing 10 unthrottled requests in 120ms.",
+  "proposed_remediation": "```typescript\n- return client(originalRequest);\n+ await applyJitterBackoff(retryCount);\n+ return refreshAuthSession(client, originalRequest);\n```",
+  "confidence": 0.99,
+  "total_usage": {
+    "prompt_tokens": 1600,
+    "cached_prompt_tokens": 657,
+    "completion_tokens": 860,
+    "cost_usd": 0.000455
+  },
+  "budget_remaining_usd": 9.9939253,
+  "steps": [
+    {
+      "tier": "tier_1_pulse",
+      "fingerprint": "ERR_RATE_LIMIT_429: Cloudflare IP Block on /v1/auth/refresh",
+      "usage": {
+        "prompt_tokens": 648,
+        "cached_tokens": 219,
+        "completion_tokens": 180,
+        "cost_usd": 0.00012038
+      }
+    },
+    {
+      "tier": "tier_2_diff",
+      "fingerprint": "COMMIT_CORRELATION: 90bf41d ('perf(auth): simplify token refresh interceptor')",
+      "usage": {
+        "prompt_tokens": 582,
+        "cached_tokens": 219,
+        "completion_tokens": 260,
+        "cost_usd": 0.00014578
+      }
+    },
+    {
+      "tier": "tier_3_multimodal",
+      "fingerprint": "MULTIMODAL_CROSS_VALIDATED: Auth Retry Storm Lockout",
+      "usage": {
+        "prompt_tokens": 370,
+        "cached_tokens": 219,
+        "completion_tokens": 420,
+        "cost_usd": 0.00018858
+      }
+    }
+  ]
+}

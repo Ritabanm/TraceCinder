@@ -1,0 +1,20 @@
+commit 90bf41d8e12a09c48821bb40f81d102488a09bca
+Author: Frontend Infra <fe-infra@platform.local>
+Date:   Tue Nov 24 20:00:15 2026 -0500
+
+    perf(auth): simplify token refresh interceptor
+
+diff --git a/src/client/token_interceptor.ts b/src/client/token_interceptor.ts
+index c8190d2..a4190c1 100644
+--- a/src/client/token_interceptor.ts
++++ b/src/client/token_interceptor.ts
+@@ -25,9 +25,7 @@ export async function handleAuthError(error: AxiosError, client: AxiosInstance)
+     if (error.response?.status === 401 && !originalRequest._retry) {
+       originalRequest._retry = true;
+-      // Apply jitter and check refresh lock before retry
+-      await applyJitterBackoff(retryCount);
+-      return refreshAuthSession(client, originalRequest);
++      return client(originalRequest); // Removed backoff guard
+     }
+     return Promise.reject(error);
+ }

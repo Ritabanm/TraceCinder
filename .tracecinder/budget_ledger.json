@@ -1,8 +1,9 @@
 {
   "cap_usd": 10.0,
-  "spent_usd": 0.0014049899999999998,
-  "total_prompt_tokens": 5208,
-  "total_cached_tokens": 1971,
-  "total_completion_tokens": 2580,
-  "incidents_triaged": 0
+  "spent_usd": 0.00701136,
+  "total_prompt_tokens": 25904,
+  "total_cached_tokens": 9855,
+  "total_completion_tokens": 12900,
+  "incidents_triaged": 12,
+  "last_updated": "2026-11-25T03:01:00.893281+00:00"
 }

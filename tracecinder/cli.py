@@ -65,7 +65,36 @@ def cmd_triage(args: argparse.Namespace) -> None:
     for idx, step in enumerate(report.steps):
         render_step_progress(step, idx)
 
+    # Save full report JSON
+    reports_dir = (ledger_path.parent / "reports") if ledger_path else Path(".tracecinder/reports")
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    report_file = reports_dir / f"{report.incident_id}_rca.json"
+    report_data = {
+        "incident_id": report.incident_id,
+        "final_tier": report.final_tier.value,
+        "severity": report.severity.value,
+        "summary": report.summary,
+        "root_cause": report.root_cause,
+        "correlated_diff": report.correlated_diff,
+        "visual_finding": report.visual_finding,
+        "proposed_remediation": report.proposed_remediation,
+        "confidence": report.confidence,
+        "total_usage": {
+            "prompt_tokens": report.total_usage.prompt_tokens,
+            "cached_prompt_tokens": report.total_usage.cached_prompt_tokens,
+            "completion_tokens": report.total_usage.completion_tokens,
+            "cost_usd": report.total_usage.cost_usd,
+        },
+        "budget_remaining_usd": report.budget_remaining_usd,
+    }
+    report_file.write_text(json.dumps(report_data, indent=2))
+    ledger.incidents_triaged += 1
+    ledger.save()
+
     render_final_report(report)
+    print(f"📁 Detailed RCA Report saved to: {report_file}")
+    if ledger.audit_log_path:
+        print(f"🧾 Usage Audit Log appended to:  {ledger.audit_log_path}\n")
     render_budget_meter(ledger)
 
 
@@ -89,6 +118,15 @@ def cmd_replay(args: argparse.Namespace) -> None:
     cmd_triage(args)
 
 
+def cmd_ui(args: argparse.Namespace) -> None:
+    from tracecinder.web import start_server
+
+    render_banner()
+    port = getattr(args, "port", 8080) or 8080
+    ledger_path = Path(args.ledger) if args.ledger else DEFAULT_LEDGER_PATH
+    start_server(port=port, ledger_path=ledger_path)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="cinder",
@@ -102,16 +140,22 @@ def main() -> None:
 
     triage_parser = subparsers.add_parser("triage", help="Triage an incident bundle directory")
     triage_parser.add_argument("incident_path", type=str, help="Path to incident directory")
+    triage_parser.add_argument("--mock", action="store_true", default=True, help="Run in local offline mock mode")
 
     budget_parser = subparsers.add_parser("budget", help="Inspect current budget status and token ledger")
 
     replay_parser = subparsers.add_parser("replay", help="Replay a pre-canned multimodal incident showcase")
+
+    ui_parser = subparsers.add_parser("ui", help="Launch interactive web dashboard")
+    ui_parser.add_argument("--port", type=int, default=8080, help="Port to bind dashboard (default: 8080)")
 
     args = parser.parse_args()
     if args.command == "triage":
         cmd_triage(args)
     elif args.command == "budget":
         cmd_budget(args)
+    elif args.command == "ui":
+        cmd_ui(args)
     elif args.command == "replay" or not args.command:
         cmd_replay(args)
 

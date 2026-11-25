@@ -30,6 +30,8 @@ class MuseEmberProvider:
         self.mock_mode = mock_mode or (not self.api_key)
 
     def _encode_image_b64(self, image_path: str) -> Optional[str]:
+        if image_path.startswith("data:image/"):
+            return image_path.split(",", 1)[-1]
         if not os.path.exists(image_path):
             return None
         with open(image_path, "rb") as f:
@@ -41,6 +43,7 @@ class MuseEmberProvider:
         prompt_context: str,
         budget_ledger: BudgetLedger,
         image_path: Optional[str] = None,
+        incident_id: str = "unknown",
     ) -> TriageStepResult:
         static_sys, dynamic_user = format_cache_friendly_prompt(prompt_context)
 
@@ -54,11 +57,11 @@ class MuseEmberProvider:
 
         if self.mock_mode:
             return self._mock_tier_response(
-                tier, dynamic_user, budget_ledger, estimated_prompt_tokens, estimated_cached_tokens
+                tier, dynamic_user, budget_ledger, estimated_prompt_tokens, estimated_cached_tokens, incident_id
             )
 
         return self._call_meta_api(
-            tier, static_sys, dynamic_user, image_path, budget_ledger
+            tier, static_sys, dynamic_user, image_path, budget_ledger, incident_id
         )
 
     def _mock_tier_response(
@@ -68,12 +71,40 @@ class MuseEmberProvider:
         budget_ledger: BudgetLedger,
         prompt_tokens: int,
         cached_tokens: int,
+        incident_id: str = "unknown",
     ) -> TriageStepResult:
         """Deterministic simulation for local offline preview and testing."""
         completion_tokens = 320
 
         if tier == EscalationTier.PULSE:
-            usage = budget_ledger.record_usage(prompt_tokens, cached_tokens, completion_tokens=180)
+            usage = budget_ledger.record_usage(
+                prompt_tokens, cached_tokens, completion_tokens=180, tier_name=tier.value, incident_id=incident_id
+            )
+            if incident_id == "INC-2026-9042":
+                return TriageStepResult(
+                    tier=tier,
+                    fingerprint="ERR_RATE_LIMIT_429: Cloudflare IP Block on /v1/auth/refresh",
+                    severity=IncidentSeverity.CRITICAL,
+                    root_cause="Cascading 401 Unauthorized responses triggering unthrottled frontend client retries.",
+                    proposed_remediation="Inspect client-side token interceptor for missing retry backoff.",
+                    confidence=0.91,
+                    usage=usage,
+                    escalate_to=EscalationTier.DIFF_CORRELATOR,
+                    raw_response="Detected 10 unthrottled refresh requests within 120ms resulting in 429.",
+                )
+            elif incident_id != "INC-2026-9041":
+                # Dynamic response for custom uploaded incidents
+                return TriageStepResult(
+                    tier=tier,
+                    fingerprint=f"ERR_CUSTOM_TELEMETRY: Anomaly isolated in custom execution log",
+                    severity=IncidentSeverity.HIGH,
+                    root_cause="Detected unhandled exception in ingested telemetry stream.",
+                    proposed_remediation="Trace failing execution path and correlate with git commit diff.",
+                    confidence=0.89,
+                    usage=usage,
+                    escalate_to=EscalationTier.DIFF_CORRELATOR,
+                    raw_response="Custom telemetry window extracted and fingerprinted.",
+                )
             return TriageStepResult(
                 tier=tier,
                 fingerprint="ERR_AUTH_NULL_AVATAR: TypeError at user_service/serializer.py",
@@ -87,7 +118,37 @@ class MuseEmberProvider:
             )
 
         elif tier == EscalationTier.DIFF_CORRELATOR:
-            usage = budget_ledger.record_usage(prompt_tokens, cached_tokens, completion_tokens=260)
+            usage = budget_ledger.record_usage(
+                prompt_tokens, cached_tokens, completion_tokens=260, tier_name=tier.value, incident_id=incident_id
+            )
+            if incident_id == "INC-2026-9042":
+                return TriageStepResult(
+                    tier=tier,
+                    fingerprint="COMMIT_CORRELATION: 90bf41d ('perf(auth): simplify token refresh interceptor')",
+                    severity=IncidentSeverity.CRITICAL,
+                    culprit_file="src/client/token_interceptor.ts",
+                    culprit_line_range="L26-L30",
+                    root_cause="Commit 90bf41d deleted 'applyJitterBackoff' before retrying 401s, causing an infinite tight loop.",
+                    proposed_remediation="Restore exponential jitter backoff and max retry guard (max 3 attempts).",
+                    confidence=0.97,
+                    usage=usage,
+                    escalate_to=EscalationTier.MULTIMODAL_RCA,
+                    raw_response="Commit 90bf41d introduced tight loop on auth failure.",
+                )
+            elif incident_id != "INC-2026-9041":
+                return TriageStepResult(
+                    tier=tier,
+                    fingerprint="COMMIT_CORRELATION: 4e819fa ('Update payload handler and serializer')",
+                    severity=IncidentSeverity.CRITICAL,
+                    culprit_file="src/handlers/main_controller.py",
+                    culprit_line_range="L31-L36",
+                    root_cause="Recent commit modified payload structure without fallback guard for missing fields.",
+                    proposed_remediation="Reinstate schema validation guard and fallback defaults.",
+                    confidence=0.95,
+                    usage=usage,
+                    escalate_to=EscalationTier.MULTIMODAL_RCA,
+                    raw_response="Correlated custom log exception with diff hunk.",
+                )
             return TriageStepResult(
                 tier=tier,
                 fingerprint="COMMIT_CORRELATION: a8f41bc ('Refactor UserProfile to strict schemas')",
@@ -103,7 +164,50 @@ class MuseEmberProvider:
             )
 
         elif tier == EscalationTier.MULTIMODAL_RCA:
-            usage = budget_ledger.record_usage(prompt_tokens, cached_tokens, completion_tokens=420)
+            usage = budget_ledger.record_usage(
+                prompt_tokens, cached_tokens, completion_tokens=420, tier_name=tier.value, incident_id=incident_id
+            )
+            if incident_id == "INC-2026-9042":
+                return TriageStepResult(
+                    tier=tier,
+                    fingerprint="MULTIMODAL_CROSS_VALIDATED: Auth Retry Storm Lockout",
+                    severity=IncidentSeverity.CRITICAL,
+                    culprit_file="src/client/token_interceptor.ts",
+                    culprit_line_range="L27-L29",
+                    visual_evidence="Screenshot confirms user locked out with Cloudflare '429 Too Many Requests' badge citing 10 unthrottled requests in 120ms.",
+                    root_cause="Frontend interceptor removed exponential jitter backoff, turning a transient 401 into an unthrottled retry storm that tripped WAF rate-limiting.",
+                    proposed_remediation=(
+                        "```typescript\n"
+                        "- return client(originalRequest);\n"
+                        "+ await applyJitterBackoff(retryCount);\n"
+                        "+ return refreshAuthSession(client, originalRequest);\n"
+                        "```"
+                    ),
+                    confidence=0.99,
+                    usage=usage,
+                    escalate_to=None,
+                    raw_response="Full multimodal correlation confirmed between UI 429 screen, token retry logs, and git diff.",
+                )
+            elif incident_id != "INC-2026-9041":
+                return TriageStepResult(
+                    tier=tier,
+                    fingerprint="MULTIMODAL_CROSS_VALIDATED: UI Anomaly Correlated to Runtime Stack Trace",
+                    severity=IncidentSeverity.CRITICAL,
+                    culprit_file="src/handlers/main_controller.py",
+                    culprit_line_range="L32-L35",
+                    visual_evidence="Uploaded screenshot confirms UI error state and failing client request matching telemetry log burst.",
+                    root_cause="Client-side request failed due to missing fallback guard in payload handler.",
+                    proposed_remediation=(
+                        "```python\n"
+                        "- unhandled_state = request.data['payload']\n"
+                        "+ unhandled_state = request.data.get('payload') or DEFAULT_FALLBACK_STATE\n"
+                        "```"
+                    ),
+                    confidence=0.98,
+                    usage=usage,
+                    escalate_to=None,
+                    raw_response="Multimodal visual correlation confirmed for custom incident.",
+                )
             return TriageStepResult(
                 tier=tier,
                 fingerprint="MULTIMODAL_CROSS_VALIDATED: UI Checkout Modal Lockup",
@@ -128,7 +232,7 @@ class MuseEmberProvider:
             tier=tier,
             fingerprint="UNKNOWN",
             severity=IncidentSeverity.LOW,
-            usage=budget_ledger.record_usage(100, 50, 50),
+            usage=budget_ledger.record_usage(100, 50, 50, tier_name=tier.value, incident_id=incident_id),
         )
 
     def _call_meta_api(
@@ -138,6 +242,7 @@ class MuseEmberProvider:
         user_prompt: str,
         image_path: Optional[str],
         budget_ledger: BudgetLedger,
+        incident_id: str = "unknown",
     ) -> TriageStepResult:
         messages = [
             {"role": "system", "content": system_prompt},
