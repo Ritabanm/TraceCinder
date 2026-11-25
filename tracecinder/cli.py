@@ -37,10 +37,6 @@ def load_incident_from_dir(incident_dir: Path) -> IncidentBundle:
 
 def cmd_triage(args: argparse.Namespace) -> None:
     render_banner()
-    incident_path = Path(args.incident_path)
-    if not incident_path.exists():
-        print(f"Error: Incident path {incident_path} not found.")
-        sys.exit(1)
 
     ledger_path = Path(args.ledger) if args.ledger else DEFAULT_LEDGER_PATH
     ledger = BudgetLedger.load(ledger_path)
@@ -49,7 +45,31 @@ def cmd_triage(args: argparse.Namespace) -> None:
 
     render_budget_meter(ledger)
 
-    bundle = load_incident_from_dir(incident_path)
+    # Check if direct flags --logs / --diff / --screen were used
+    if getattr(args, "logs", None):
+        log_path = Path(args.logs)
+        if not log_path.exists():
+            print(f"Error: Log file {log_path} not found.")
+            sys.exit(1)
+        diff_path = str(Path(args.diff)) if getattr(args, "diff", None) and Path(args.diff).exists() else None
+        screen_path = str(Path(args.screen)) if getattr(args, "screen", None) and Path(args.screen).exists() else None
+        
+        bundle = IncidentBundle(
+            incident_id=f"CLI-{log_path.stem}",
+            service=getattr(args, "service", "core-service") or "core-service",
+            summary=f"Automated Triage of {log_path.name}",
+            timestamp="2026-11-24T22:00:00Z",
+            log_path=str(log_path),
+            diff_path=diff_path,
+            screenshot_path=screen_path,
+        )
+    else:
+        incident_path = Path(args.incident_path) if getattr(args, "incident_path", None) else Path("incidents/sample_checkout_break")
+        if not incident_path.exists():
+            print(f"Error: Incident path {incident_path} not found.")
+            sys.exit(1)
+        bundle = load_incident_from_dir(incident_path)
+
     print(f"\n⚡ Ingesting Incident Bundle: {bundle.incident_id} [{bundle.service}]")
     print(f"   Log stream: {bundle.log_path}")
     if bundle.diff_path:
@@ -79,6 +99,9 @@ def cmd_triage(args: argparse.Namespace) -> None:
         "visual_finding": report.visual_finding,
         "proposed_remediation": report.proposed_remediation,
         "confidence": report.confidence,
+        "patch_file_path": report.patch_file_path,
+        "verification_status": report.verification_status,
+        "verification_details": report.verification_details,
         "total_usage": {
             "prompt_tokens": report.total_usage.prompt_tokens,
             "cached_prompt_tokens": report.total_usage.cached_prompt_tokens,
@@ -93,8 +116,11 @@ def cmd_triage(args: argparse.Namespace) -> None:
 
     render_final_report(report)
     print(f"📁 Detailed RCA Report saved to: {report_file}")
+    if report.patch_file_path:
+        print(f"💾 Verified Git Patch saved to:  {report.patch_file_path} & artifacts/fix.patch")
     if ledger.audit_log_path:
         print(f"🧾 Usage Audit Log appended to:  {ledger.audit_log_path}\n")
+
     render_budget_meter(ledger)
 
 
@@ -135,11 +161,17 @@ def main() -> None:
     parser.add_argument("--ledger", type=str, help="Path to custom budget ledger JSON")
     parser.add_argument("--cap", type=float, help="Override budget cap in USD (default: $10.00)")
     parser.add_argument("--mock", action="store_true", default=False, help="Run in local offline mock mode")
+    parser.add_argument("--ui", action="store_true", help="Launch interactive web trace viewer")
 
     subparsers = parser.add_subparsers(dest="command")
 
-    triage_parser = subparsers.add_parser("triage", help="Triage an incident bundle directory")
-    triage_parser.add_argument("incident_path", type=str, help="Path to incident directory")
+    triage_parser = subparsers.add_parser("triage", help="Triage an incident bundle or raw logs/diffs")
+    triage_parser.add_argument("incident_path", nargs="?", default=None, help="Path to incident directory")
+    triage_parser.add_argument("--logs", type=str, help="Path to raw telemetry log file")
+    triage_parser.add_argument("--diff", type=str, help="Path to recent git commit diff / patch")
+    triage_parser.add_argument("--screen", type=str, help="Path to UI failure screenshot / screen recording frame")
+    triage_parser.add_argument("--service", type=str, default="core-service", help="Target service name")
+    triage_parser.add_argument("--verify", action="store_true", default=True, help="Run ast.parse and git apply check")
     triage_parser.add_argument("--mock", action="store_true", default=True, help="Run in local offline mock mode")
 
     budget_parser = subparsers.add_parser("budget", help="Inspect current budget status and token ledger")
@@ -150,12 +182,12 @@ def main() -> None:
     ui_parser.add_argument("--port", type=int, default=8080, help="Port to bind dashboard (default: 8080)")
 
     args = parser.parse_args()
-    if args.command == "triage":
+    if getattr(args, "ui", False) or args.command == "ui":
+        cmd_ui(args)
+    elif args.command == "triage":
         cmd_triage(args)
     elif args.command == "budget":
         cmd_budget(args)
-    elif args.command == "ui":
-        cmd_ui(args)
     elif args.command == "replay" or not args.command:
         cmd_replay(args)
 

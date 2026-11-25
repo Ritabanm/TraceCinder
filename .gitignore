@@ -2,3 +2,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 .DS_Store
+.tracecinder/reports/
+.tracecinder/usage_audit.jsonl
+remediation.patch
+artifacts/

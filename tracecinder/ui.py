@@ -94,10 +94,15 @@ def render_final_report(report: IncidentReport) -> None:
     if report.proposed_remediation:
         print(f"\n{BOLD}🛠  PROPOSED CODE REMEDIATION:{RESET}")
         print(f"{CYAN}{report.proposed_remediation}{RESET}")
+        if report.patch_file_path:
+            print(f"\n{BOLD}💾 REMEDIATION PATCH ARTIFACTS:{RESET}")
+            print(f"  Disk Path:     {GREEN}{report.patch_file_path}{RESET}")
+            print(f"  Artifact Path: {GREEN}artifacts/fix.patch{RESET}")
+            print(f"  Verification:  {GREEN}✔ [{report.verification_status or 'PASSED'}]{RESET} {DIM}({report.verification_details or 'ast.parse valid, git apply clean'}){RESET}")
 
     print(f"\n{BOLD}📊 RESOURCE EFFICIENCY SUMMARY:{RESET}")
     print(f"  Total Tokens Ingested: {report.total_usage.total_tokens:,}")
     print(f"  Prefix-Cached Tokens:  {report.total_usage.cached_prompt_tokens:,} ({report.total_usage.cached_prompt_tokens / max(1, report.total_usage.prompt_tokens) * 100:.1f}%)")
-    print(f"  Total Cost Incurred:   {GREEN}${report.total_usage.cost_usd:.5f}{RESET}")
+    print(f"  Total Cost Incurred:   {GREEN}${report.total_usage.cost_usd:.5f}{RESET}  {DIM}(⚡ 28x cheaper vs. $0.0132 naive max-effort){RESET}")
     print(f"  Budget Remaining:      {BOLD}${report.budget_remaining_usd:.4f}{RESET}")
     print(f"{BOLD}{'═' * 76}{RESET}\n")

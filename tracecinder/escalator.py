@@ -12,6 +12,7 @@ from tracecinder.models import (
     TriageStepResult,
 )
 from tracecinder.provider import MuseEmberProvider
+from tracecinder.verifier import PatchVerifier
 
 
 class ReasoningEscalator:
@@ -141,6 +142,22 @@ TASK:
                 "lines": last_step.culprit_line_range or "unknown",
             }
 
+        patch_file = None
+        verif_status = None
+        verif_details = None
+
+        if last_step.proposed_remediation:
+            saved_patch = PatchVerifier.save_patch_file(
+                raw_patch=last_step.proposed_remediation,
+                target_file=last_step.culprit_file,
+            )
+            patch_file = str(saved_patch)
+            verif_status, verif_details = PatchVerifier.verify_patch(
+                patch_path=saved_patch,
+                raw_patch=last_step.proposed_remediation,
+                file_path=last_step.culprit_file,
+            )
+
         return IncidentReport(
             incident_id=bundle.incident_id,
             final_tier=last_step.tier,
@@ -151,6 +168,9 @@ TASK:
             visual_finding=last_step.visual_evidence,
             proposed_remediation=last_step.proposed_remediation,
             confidence=last_step.confidence,
+            patch_file_path=patch_file,
+            verification_status=verif_status,
+            verification_details=verif_details,
             steps=steps,
             total_usage=total_usage,
             budget_remaining_usd=self.budget_ledger.remaining_usd,

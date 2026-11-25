@@ -68,6 +68,9 @@ class IncidentReport:
     visual_finding: Optional[str] = None
     proposed_remediation: str = ""
     confidence: float = 0.0
+    patch_file_path: Optional[str] = None
+    verification_status: Optional[str] = None
+    verification_details: Optional[str] = None
     steps: List[TriageStepResult] = field(default_factory=list)
     total_usage: TokenUsage = field(default_factory=TokenUsage)
     budget_remaining_usd: float = 10.00
