@@ -4,11 +4,25 @@ import json
 import os
 import urllib.request
 from typing import Any, Dict, Optional, Tuple
+from pathlib import Path
 from tracecinder.budget import BudgetLedger
 from tracecinder.cache import format_cache_friendly_prompt
 from tracecinder.models import EscalationTier, IncidentSeverity, TriageStepResult
 
 DEFAULT_MODEL = "meta-llama/muse-ember-1.0"
+
+
+def _load_env_if_present() -> None:
+    env_file = Path(".env")
+    if env_file.exists():
+        for line in env_file.read_text().splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+
+
+_load_env_if_present()
 
 
 class MuseEmberProvider:
