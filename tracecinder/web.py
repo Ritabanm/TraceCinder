@@ -430,22 +430,24 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     function renderColorCodedDiff(rawPatch) {
       if (!rawPatch) return "";
       let clean = rawPatch.trim();
-      // Remove leading ```lang
-      clean = clean.replace(/^```[a-zA-Z0-9_-]*\\n?/, "");
-      // Remove trailing ```
-      clean = clean.replace(/\\n?```$/, "").trim();
+      clean = clean.replace(/^[`'"]+[a-zA-Z0-9_-]*\r?\n?/, "");
+      clean = clean.replace(/\r?\n?[`'"]+\s*$/, "").trim();
       latestPatchText = clean;
 
-      const lines = clean.split('\\n');
+      const lines = clean.split(/\r?\n|\\n/);
       return lines.map(line => {
+        const trimmed = line.trim();
         const escaped = escapeHtml(line);
-        if (line.startsWith('+') && !line.startsWith('+++')) {
-          return `<div class="text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded my-0.5 font-mono"><span class="select-none text-emerald-600 mr-2 font-bold">+</span>${escaped.slice(1)}</div>`;
-        } else if (line.startsWith('-') && !line.startsWith('---')) {
-          return `<div class="text-rose-400 bg-rose-950/40 px-2 py-0.5 rounded my-0.5 font-mono"><span class="select-none text-rose-600 mr-2 font-bold">-</span>${escaped.slice(1)}</div>`;
-        } else {
-          return `<div class="text-slate-300 px-2 py-0.5 font-mono">${escaped}</div>`;
+        if (trimmed.startsWith('+') && !trimmed.startsWith('+++')) {
+          const content = escapeHtml(trimmed.slice(1).trimStart());
+          return `<div class="text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded my-1 font-mono flex items-center gap-2"><span class="select-none text-emerald-500 font-bold w-3">+</span><span>${content}</span></div>`;
+        } else if (trimmed.startsWith('-') && !trimmed.startsWith('---')) {
+          const content = escapeHtml(trimmed.slice(1).trimStart());
+          return `<div class="text-rose-400 bg-rose-950/40 px-2.5 py-1 rounded my-1 font-mono flex items-center gap-2"><span class="select-none text-rose-500 font-bold w-3">-</span><span>${content}</span></div>`;
+        } else if (trimmed) {
+          return `<div class="text-slate-300 px-2.5 py-0.5 font-mono">${escaped}</div>`;
         }
+        return '';
       }).join('');
     }
 
