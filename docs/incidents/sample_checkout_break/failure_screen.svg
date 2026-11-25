@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 680" width="100%" height="100%" style="background:#18181b; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;">
+  <defs>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#000" flood-opacity="0.75"/>
+    </filter>
+  </defs>
+
+  <!-- macOS Window Frame -->
+  <rect width="1100" height="680" rx="12" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+  
+  <!-- Window Header / Title Bar -->
+  <path d="M 0 12 Q 0 0 12 0 L 1088 0 Q 1100 0 1100 12 L 1100 42 L 0 42 Z" fill="#27272a"/>
+  <circle cx="20" cy="21" r="6" fill="#ff5f56"/>
+  <circle cx="38" cy="21" r="6" fill="#ffbd2e"/>
+  <circle cx="56" cy="21" r="6" fill="#27c93f"/>
+
+  <!-- Chrome Tab -->
+  <path d="M 80 42 L 95 12 L 290 12 L 305 42 Z" fill="#18181b"/>
+  <text x="115" y="27" fill="#e4e4e7" font-size="12" font-weight="500">Acme Store • Checkout ($149.00)</text>
+  <text x="280" y="27" fill="#71717a" font-size="12">✕</text>
+
+  <!-- URL Bar -->
+  <rect x="80" y="48" width="940" height="30" rx="6" fill="#09090b" stroke="#27272a" stroke-width="1"/>
+  <text x="96" y="68" fill="#10b981" font-size="12">🔒</text>
+  <text x="116" y="68" fill="#a1a1aa" font-size="12">https://</text>
+  <text x="160" y="68" fill="#f4f4f5" font-size="12" font-weight="500">store.acmewear.io/checkout/session_99812</text>
+  <text x="980" y="68" fill="#71717a" font-size="12">⭐ ⟳</text>
+
+  <!-- Main Viewport Grid: Left is Web Page (600px), Right is Chrome DevTools (500px) -->
+  
+  <!-- LEFT: Web App Checkout Page -->
+  <g transform="translate(0, 84)">
+    <rect width="600" height="596" fill="#09090b"/>
+    
+    <!-- Navbar -->
+    <rect width="600" height="50" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+    <text x="24" y="31" fill="#f4f4f5" font-size="15" font-weight="700">ACME SUPPLY</text>
+    <text x="510" y="31" fill="#a1a1aa" font-size="12">Cart (2)</text>
+
+    <!-- Order Summary Card -->
+    <rect x="30" y="80" width="540" height="220" rx="8" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+    <text x="50" y="112" fill="#f4f4f5" font-size="15" font-weight="600">Review &amp; Pay</text>
+    
+    <text x="50" y="150" fill="#a1a1aa" font-size="13">Pro Developer Hoodie (M)</text>
+    <text x="510" y="150" fill="#f4f4f5" font-size="13" font-weight="600">$89.00</text>
+    
+    <text x="50" y="180" fill="#a1a1aa" font-size="13">Thermal Desk Mat</text>
+    <text x="510" y="180" fill="#f4f4f5" font-size="13" font-weight="600">$60.00</text>
+
+    <line x1="50" y1="205" x2="550" y2="205" stroke="#27272a" stroke-width="1"/>
+    <text x="50" y="235" fill="#f4f4f5" font-size="14" font-weight="700">Total</text>
+    <text x="495" y="235" fill="#10b981" font-size="16" font-weight="700">$149.00</text>
+
+    <!-- Failed Checkout Button with Spinner -->
+    <rect x="30" y="325" width="540" height="46" rx="8" fill="#dc2626"/>
+    <text x="250" y="353" fill="#ffffff" font-size="14" font-weight="600">Processing Payment...</text>
+
+    <!-- Red Toast Notification Banner -->
+    <g filter="url(#shadow)">
+      <rect x="30" y="395" width="540" height="70" rx="8" fill="#450a0a" stroke="#ef4444" stroke-width="1.5"/>
+      <text x="50" y="425" fill="#fca5a5" font-size="13" font-weight="700">⚠️ Payment Session Failed: Internal Server Error</text>
+      <text x="50" y="446" fill="#fecaca" font-size="11" font-family="'JetBrains Mono', monospace">HTTP 500: user_service serialization exception [trace_id: tr_88a91c01]</text>
+    </g>
+  </g>
+
+  <!-- VERTICAL DIVIDER -->
+  <line x1="600" y1="84" x2="600" y2="680" stroke="#3f3f46" stroke-width="2"/>
+
+  <!-- RIGHT: Real Chrome DevTools Console & Network Panel -->
+  <g transform="translate(600, 84)">
+    <rect width="500" height="596" fill="#121214"/>
+    
+    <!-- DevTools Toolbar -->
+    <rect width="500" height="32" fill="#1f1f23" stroke="#27272a" stroke-width="1"/>
+    <text x="16" y="21" fill="#71717a" font-size="11" font-weight="500">Elements</text>
+    <text x="75" y="21" fill="#e4e4e7" font-size="11" font-weight="700" text-decoration="underline">Console</text>
+    <text x="135" y="21" fill="#ef4444" font-size="11" font-weight="600">Network (1)</text>
+    <text x="215" y="21" fill="#71717a" font-size="11">Sources</text>
+    <text x="440" y="21" fill="#ef4444" font-size="11" font-weight="700">✕ 2 Errors</text>
+
+    <!-- Filter / Console header -->
+    <rect y="32" width="500" height="26" fill="#18181b" stroke="#27272a" stroke-width="0.5"/>
+    <text x="16" y="49" fill="#71717a" font-size="11" font-family="monospace">Filter: 500 error</text>
+
+    <!-- Real Console Error 1: 500 Internal Server Error -->
+    <rect y="58" width="500" height="50" fill="#291215" stroke="#ef4444" stroke-width="0.5"/>
+    <text x="16" y="78" fill="#ef4444" font-size="12" font-weight="700">❌ POST https://api.acme.corp/v1/checkout/session</text>
+    <text x="380" y="78" fill="#f87171" font-size="11" font-family="monospace">checkout.ts:142</text>
+    <text x="36" y="96" fill="#fca5a5" font-size="11" font-family="'JetBrains Mono', monospace">status: 500 (Internal Server Error) • 240ms</text>
+
+    <!-- Real Console Error 2: Stack Trace -->
+    <rect y="108" width="500" height="150" fill="#201012" stroke="#ef4444" stroke-width="0.5"/>
+    <text x="16" y="128" fill="#ef4444" font-size="11" font-family="'JetBrains Mono', monospace" font-weight="700">Uncaught (in promise) TypeError: 'NoneType' object has no attribute 'strip'</text>
+    <text x="36" y="148" fill="#fca5a5" font-size="10.5" font-family="'JetBrains Mono', monospace">at UserSerializer.serialize (user_serializer.py:45)</text>
+    <text x="36" y="166" fill="#a1a1aa" font-size="10.5" font-family="'JetBrains Mono', monospace">at CheckoutService.create_session (checkout_service.py:118)</text>
+    <text x="36" y="184" fill="#a1a1aa" font-size="10.5" font-family="'JetBrains Mono', monospace">at async handle_post_checkout (gateway.py:84)</text>
+    
+    <!-- Code Highlight Context in DevTools -->
+    <rect x="25" y="200" width="450" height="42" rx="4" fill="#09090b" stroke="#3f3f46" stroke-width="1"/>
+    <text x="35" y="218" fill="#ef4444" font-size="11" font-family="'JetBrains Mono', monospace">&gt; line 45: avatar_url: str = profile["avatar_url"].strip()</text>
+    <text x="35" y="233" fill="#71717a" font-size="10" font-family="'JetBrains Mono', monospace">  cause: guest_anon_7710 avatar_url is None</text>
+
+    <!-- Network Inspection Window Bottom -->
+    <rect y="265" width="500" height="28" fill="#1f1f23" stroke="#27272a" stroke-width="1"/>
+    <text x="16" y="283" fill="#e4e4e7" font-size="11" font-weight="600">Network Telemetry Request Headers</text>
+
+    <rect y="293" width="500" height="290" fill="#121214"/>
+    <text x="16" y="318" fill="#71717a" font-size="11" font-family="monospace">Request URL: https://api.acme.corp/v1/checkout/session</text>
+    <text x="16" y="338" fill="#71717a" font-size="11" font-family="monospace">Request Method: POST</text>
+    <text x="16" y="358" fill="#ef4444" font-size="11" font-family="monospace">Status Code: 500 Internal Server Error</text>
+    <text x="16" y="378" fill="#71717a" font-size="11" font-family="monospace">x-trace-id: tr_88a91c01</text>
+    <text x="16" y="398" fill="#71717a" font-size="11" font-family="monospace">content-type: application/json</text>
+    
+    <rect x="16" y="420" width="468" height="90" rx="4" fill="#1c1917" stroke="#dc2626" stroke-width="1"/>
+    <text x="28" y="442" fill="#ef4444" font-size="11" font-family="monospace" font-weight="700">Response Payload:</text>
+    <text x="28" y="462" fill="#fca5a5" font-size="10.5" font-family="monospace">{"error": "TypeError: 'NoneType' object has no attribute 'strip'",</text>
+    <text x="28" y="480" fill="#fca5a5" font-size="10.5" font-family="monospace"> "service": "user_serializer.py:45", "trace_id": "tr_88a91c01"}</text>
+  </g>
+</svg>

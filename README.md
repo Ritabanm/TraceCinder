@@ -3,6 +3,12 @@
 > **Autonomous, Budget-Enforced CI/Incident Remediation Runtime**  
 > Powered by Meta's `muse-ember-1.0` via prefix caching, `<200K` token anomaly chunking, dynamic minimal-to-max reasoning escalation, and automated `ast.parse` / `git apply` patch verification under a strict **$10 API cap**.
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-GitHub_Pages-ec4899?style=for-the-badge&logo=github)](https://ritabanm.github.io/TraceCinder/)
+[![Model](https://img.shields.io/badge/Model-muse--ember--1.0-cyan?style=for-the-badge)](https://cerebralvalley.ai/e/muse-ember-hackathon)
+[![Budget Cap](https://img.shields.io/badge/Budget_Cap-$10.00-emerald?style=for-the-badge)](https://cerebralvalley.ai/e/muse-ember-hackathon)
+
+👉 **Interactive Trace Viewer Demo:** [https://ritabanm.github.io/TraceCinder/](https://ritabanm.github.io/TraceCinder/)
+
 ---
 
 ## ⚡ The Thesis
