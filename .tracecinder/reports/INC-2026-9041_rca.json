@@ -17,7 +17,7 @@
     "completion_tokens": 860,
     "cost_usd": 0.000468
   },
-  "budget_remaining_usd": 9.99298864,
+  "budget_remaining_usd": 9.99158863,
   "steps": [
     {
       "tier": "tier_1_pulse",
