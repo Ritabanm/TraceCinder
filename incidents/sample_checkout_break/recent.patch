@@ -1,0 +1,21 @@
+commit a8f41bc901ef32098dcf62140a8910bc47a9e102
+Author: Core Platform Team <eng@platform.local>
+Date:   Tue Nov 24 19:25:00 2026 -0500
+
+    refactor(user): enforce strict schema serialization on user profile
+
+diff --git a/src/services/user_serializer.py b/src/services/user_serializer.py
+index e83910c..b190f82 100644
+--- a/src/services/user_serializer.py
++++ b/src/services/user_serializer.py
+@@ -39,10 +39,8 @@ class UserSerializer:
+     @staticmethod
+     def serialize(profile: dict) -> dict:
+         return {
+             "id": profile["id"],
+             "email": profile["email"],
+-            # Guest accounts may have null avatar_url, default to placeholder
+-            "avatar_url": profile.get("avatar_url") or "https://static.cdn/default-avatar.png",
++            "avatar_url": profile["avatar_url"].strip(),
+             "tier": profile.get("tier", "standard")
+         }

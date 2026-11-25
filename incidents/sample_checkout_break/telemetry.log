@@ -1,0 +1,15 @@
+2026-11-24T19:41:58.102Z [INFO] [checkout-gateway] [trace_id=tr_88a91c01] Incoming POST /v1/checkout/session from 10.42.1.84 - cart_id=c_99812
+2026-11-24T19:41:58.115Z [INFO] [checkout-gateway] [trace_id=tr_88a91c01] Validated cart total: $149.00 USD, items_count=2
+2026-11-24T19:41:58.120Z [INFO] [checkout-gateway] [trace_id=tr_88a91c01] Forwarding request to user-service /v1/user/profile for customer_id=guest_anon_7710
+2026-11-24T19:41:58.140Z [ERROR] [checkout-gateway] [trace_id=tr_88a91c01] Upstream call failed: HTTP 500 Internal Server Error
+2026-11-24T19:41:58.141Z [ERROR] [checkout-gateway] [trace_id=tr_88a91c01] Exception caught during checkout serialization:
+Traceback (most recent call last):
+  File "/app/src/services/checkout_service.py", line 118, in create_session
+    user_data = UserSerializer.serialize(upstream_profile)
+  File "/app/src/services/user_serializer.py", line 45, in serialize
+    avatar_url: str = profile["avatar_url"].strip()
+TypeError: 'NoneType' object has no attribute 'strip'
+2026-11-24T19:41:58.143Z [ERROR] [checkout-gateway] [trace_id=tr_88a91c01] Unhandled 500 returned to client for cart_id=c_99812
+2026-11-24T19:41:58.204Z [INFO] [checkout-gateway] [trace_id=tr_88a91c02] Incoming POST /v1/checkout/session from 10.42.1.99 - cart_id=c_99813
+2026-11-24T19:41:58.220Z [ERROR] [checkout-gateway] [trace_id=tr_88a91c02] TypeError: 'NoneType' object has no attribute 'strip' at user_serializer.py:45
+2026-11-24T19:41:58.310Z [WARN] [checkout-gateway] Circuit breaker threshold approaching for user_serializer (5 consecutive 500s)

@@ -1,0 +1,8 @@
+{
+  "cap_usd": 10.0,
+  "spent_usd": 0.0014049899999999998,
+  "total_prompt_tokens": 5208,
+  "total_cached_tokens": 1971,
+  "total_completion_tokens": 2580,
+  "incidents_triaged": 0
+}

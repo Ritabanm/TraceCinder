@@ -1,0 +1,9 @@
+{
+  "incident_id": "INC-2026-9041",
+  "service": "checkout-gateway",
+  "summary": "Sudden 500 error spike on /v1/checkout/session during Black Friday flash sale",
+  "timestamp": "2026-11-24T19:42:10Z",
+  "log_file": "telemetry.log",
+  "diff_file": "recent.patch",
+  "screenshot_file": "failure_screen.png"
+}
