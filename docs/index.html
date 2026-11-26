@@ -87,7 +87,7 @@
           <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span> Telemetry Feed
           </h2>
-          <span id="feed-count-badge" class="text-[11px] px-2 py-0.5 rounded-full bg-slate-800/80 text-slate-400 font-mono">2 Ready</span>
+          <span id="feed-count-badge" class="text-[11px] px-2 py-0.5 rounded-full bg-slate-800/80 text-slate-400 font-mono">2 Samples Ready</span>
         </div>
 
         <!-- Incident Selector Cards -->
@@ -215,7 +215,7 @@
               <span class="text-emerald-400 font-bold text-sm">✔ Root Cause Analysis Complete</span>
               <span id="rca-confidence" class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-800 text-emerald-300 font-mono font-semibold">99% Confidence</span>
             </div>
-            <p class="text-xs text-slate-400 mt-1">Cross-validated across telemetry logs, git commit diff, and UI failure screenshot.</p>
+            <p id="rca-subtitle" class="text-xs text-slate-400 mt-1">Cross-validated across telemetry logs, git commit diff, and UI failure screenshot.</p>
           </div>
           
           <!-- Spend + Naive Comparison Badge -->
@@ -657,17 +657,55 @@ TypeError: 'NoneType' object has no attribute 'strip'`
     }
 
     function renderReportOutput(report) {
-      ['tier1', 'tier2', 'tier3'].forEach((t, i) => {
-        document.getElementById('badge-' + t).textContent = "DONE";
-        document.getElementById('badge-' + t).className = "text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-300 font-mono";
-        if (report.steps && report.steps[i]) {
-          document.getElementById('cost-' + t).textContent = `Spent: $${report.steps[i].usage.cost_usd.toFixed(5)}`;
-        }
-      });
+      const finalTier = report.final_tier || 'tier_3_multimodal';
+      const isCustom = !!customIncidentsMap[currentIncident];
+      const hasDiff = isCustom ? !!customIncidentsMap[currentIncident].diff : true;
+      const hasScreen = isCustom ? !!customIncidentsMap[currentIncident].has_screenshot : true;
+
+      // Tier 1 is always executed
+      document.getElementById('badge-tier1').textContent = "DONE";
+      document.getElementById('badge-tier1').className = "text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-300 font-mono";
+      document.getElementById('cost-tier1').textContent = (report.steps && report.steps[0]) ? `Spent: $${report.steps[0].usage.cost_usd.toFixed(5)}` : "Spent: $0.00010";
+
+      // Tier 2 (Diff Correlator)
+      if (hasDiff && finalTier !== 'tier_1_pulse') {
+        document.getElementById('badge-tier2').textContent = "DONE";
+        document.getElementById('badge-tier2').className = "text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-300 font-mono";
+        document.getElementById('cost-tier2').textContent = (report.steps && report.steps[1]) ? `Spent: $${report.steps[1].usage.cost_usd.toFixed(5)}` : "Spent: $0.00015";
+      } else {
+        document.getElementById('badge-tier2').textContent = "SKIPPED";
+        document.getElementById('badge-tier2').className = "text-[9px] px-1.5 py-0.5 rounded bg-slate-800/80 border border-slate-700 text-slate-400 font-mono";
+        document.getElementById('cost-tier2').textContent = "Saved: (No Git Diff)";
+      }
+
+      // Tier 3 (Multimodal Vision)
+      if (hasScreen && finalTier === 'tier_3_multimodal') {
+        document.getElementById('badge-tier3').textContent = "DONE";
+        document.getElementById('badge-tier3').className = "text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-300 font-mono";
+        const step3Usage = (report.steps && report.steps[2]) ? report.steps[2].usage.cost_usd : (report.steps && report.steps[1] && !hasDiff ? report.steps[1].usage.cost_usd : 0.00019);
+        document.getElementById('cost-tier3').textContent = `Spent: $${step3Usage.toFixed(5)}`;
+      } else {
+        document.getElementById('badge-tier3').textContent = "SKIPPED";
+        document.getElementById('badge-tier3').className = "text-[9px] px-1.5 py-0.5 rounded bg-slate-800/80 border border-slate-700 text-slate-400 font-mono";
+        document.getElementById('cost-tier3').textContent = "Saved: (No UI Visual)";
+      }
 
       document.getElementById('rca-output').classList.remove('hidden');
       document.getElementById('rca-confidence').textContent = `${Math.round(report.confidence * 100)}% Confidence`;
       document.getElementById('rca-cost').textContent = `$${report.total_usage.cost_usd.toFixed(5)}`;
+
+      let subtitle = "Cross-validated across telemetry logs, git commit diff, and UI failure screenshot.";
+      if (isCustom) {
+        if (!hasDiff && !hasScreen) {
+          subtitle = "Isolated exception signature and synthesized remediation directly from telemetry logs.";
+        } else if (hasDiff && !hasScreen) {
+          subtitle = "Cross-validated telemetry stack trace directly with recent Git commit diff.";
+        } else if (!hasDiff && hasScreen) {
+          subtitle = "Correlated telemetry stack trace with UI visual failure capture.";
+        }
+      }
+      const subEl = document.getElementById('rca-subtitle');
+      if (subEl) subEl.textContent = subtitle;
 
       const actualCost = report.total_usage.cost_usd || 0.00047;
       const naiveCost = 0.0132;
@@ -762,6 +800,10 @@ TypeError: 'NoneType' object has no attribute 'strip'`
         <p class="text-[11px] text-slate-400 truncate">${service} • Direct Upload</p>
       `;
       list.prepend(card);
+
+      const totalIncidents = document.querySelectorAll('#incident-list > div').length;
+      const customCount = Object.keys(customIncidentsMap).length;
+      document.getElementById('feed-count-badge').textContent = customCount > 0 ? `${totalIncidents} Total (${customCount} Custom)` : '2 Samples Ready';
 
       closeCustomModal();
       selectIncident(customId);
