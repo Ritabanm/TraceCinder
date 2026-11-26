@@ -39,10 +39,15 @@ class ReasoningEscalator:
         # -------------------------------------------------------------------------
         # TIER 1: Pulse Triage (Minimal reasoning, fast fingerprinting)
         # -------------------------------------------------------------------------
+        has_diff = bool(bundle.diff_path and Path(bundle.diff_path).exists())
+        has_screen = bool(bundle.screenshot_path and Path(bundle.screenshot_path).exists())
+
         tier1_prompt = f"""[INCIDENT TELEMETRY - TIER 1 PULSE]
 Service: {bundle.service}
 Timestamp: {bundle.timestamp}
 Summary: {bundle.summary}
+Has Commit Diff: {has_diff}
+Has UI Screenshot: {has_screen}
 
 RAW TELEMETRY LOG WINDOW (<200K Chunks):
 {anomaly_window}
@@ -50,7 +55,10 @@ RAW TELEMETRY LOG WINDOW (<200K Chunks):
 TASK:
 1. Extract the canonical error fingerprint and exception signature.
 2. Determine severity (LOW, MEDIUM, HIGH, CRITICAL).
-3. If this is a complex or breaking incident with code changes, escalate to "tier_2_diff".
+3. Identify culprit file and line numbers from stack trace if visible.
+4. If a commit diff is available to correlate, set "escalate_to": "tier_2_diff".
+5. If no diff is available but a UI screenshot is present, set "escalate_to": "tier_3_multimodal".
+6. If neither diff nor screenshot is present, formulate root_cause and propose an atomic code remediation patch in "proposed_remediation" directly from the stack trace and set "escalate_to": null.
 """
         step1 = self.provider.execute_tier(
             tier=EscalationTier.PULSE,
@@ -60,20 +68,41 @@ TASK:
         )
         steps.append(step1)
 
+        # Handle direct escalation to Tier 3 if no diff exists but screenshot is present
+        if not has_diff and has_screen and max_tier != EscalationTier.PULSE:
+            tier3_direct_prompt = f"""[INCIDENT TELEMETRY - TIER 3 MULTIMODAL RCA]
+Service: {bundle.service}
+Culprit Hint: {step1.culprit_file or 'Identified in stack trace'} ({step1.culprit_line_range or ''})
+Stack Trace Findings: {step1.root_cause}
+
+TASK:
+1. Analyze the attached UI failure screenshot / screen recording frame.
+2. Correlate visual error states (modal locks, HTTP error toast, blank canvas, console error) with backend logs and stack trace.
+3. Formulate the definitive Root Cause Analysis (RCA) and generate a verified unified git diff or code fix in "proposed_remediation".
+Set "escalate_to": null.
+"""
+            step3 = self.provider.execute_tier(
+                tier=EscalationTier.MULTIMODAL_RCA,
+                prompt_context=tier3_direct_prompt,
+                budget_ledger=self.budget_ledger,
+                image_path=bundle.screenshot_path,
+                incident_id=bundle.incident_id,
+            )
+            steps.append(step3)
+            return self._build_report(bundle, steps)
+
         # Check if escalation to Tier 2 required (either model requested it, or severe incident with git diff present)
         should_escalate_t2 = (
             step1.escalate_to == EscalationTier.DIFF_CORRELATOR
-            or (bundle.diff_path and step1.severity in (IncidentSeverity.HIGH, IncidentSeverity.CRITICAL))
+            or (has_diff and step1.severity in (IncidentSeverity.HIGH, IncidentSeverity.CRITICAL))
         )
-        if not should_escalate_t2 or max_tier == EscalationTier.PULSE:
+        if not should_escalate_t2 or not has_diff or max_tier == EscalationTier.PULSE:
             return self._build_report(bundle, steps)
 
         # -------------------------------------------------------------------------
         # TIER 2: Diff Correlator (Correlate logs with git commit diffs)
         # -------------------------------------------------------------------------
-        diff_text = ""
-        if bundle.diff_path and Path(bundle.diff_path).exists():
-            diff_text = Path(bundle.diff_path).read_text()
+        diff_text = Path(bundle.diff_path).read_text() if bundle.diff_path and Path(bundle.diff_path).exists() else ""
 
         tier2_prompt = f"""[INCIDENT TELEMETRY - TIER 2 DIFF CORRELATION]
 Service: {bundle.service}
@@ -86,7 +115,8 @@ GIT COMMIT DIFF:
 TASK:
 1. Cross-reference the stack trace / error with the git diff lines.
 2. Identify the culprit file and line numbers.
-3. If UI anomalies or screenshots are present, set "escalate_to": "tier_3_multimodal".
+3. Formulate the root cause and generate a concrete unified git diff or code fix in "proposed_remediation".
+4. If a UI failure screenshot is present, set "escalate_to": "tier_3_multimodal", otherwise set "escalate_to": null.
 """
         step2 = self.provider.execute_tier(
             tier=EscalationTier.DIFF_CORRELATOR,
@@ -99,9 +129,9 @@ TASK:
         # Check if escalation to Tier 3 required (either model requested it, or screenshot artifact is present)
         should_escalate_t3 = (
             step2.escalate_to == EscalationTier.MULTIMODAL_RCA
-            or bool(bundle.screenshot_path)
+            or has_screen
         )
-        if not should_escalate_t3 or max_tier == EscalationTier.DIFF_CORRELATOR:
+        if not should_escalate_t3 or not has_screen or max_tier == EscalationTier.DIFF_CORRELATOR:
             return self._build_report(bundle, steps)
 
         # -------------------------------------------------------------------------
@@ -109,7 +139,7 @@ TASK:
         # -------------------------------------------------------------------------
         tier3_prompt = f"""[INCIDENT TELEMETRY - TIER 3 MULTIMODAL RCA]
 Service: {bundle.service}
-Culprit Code: {step2.culprit_file or 'Identified in recent diff'} ({step2.culprit_line_range or ''})
+Culprit Code: {step2.culprit_file or step1.culprit_file or 'Identified in recent diff'} ({step2.culprit_line_range or step1.culprit_line_range or ''})
 Diff Analysis: {step2.root_cause or step1.root_cause}
 
 TASK:
@@ -145,27 +175,44 @@ Set "escalate_to": null.
             cost_usd=round(total_cost, 6),
         )
 
+        culprit_file = None
+        culprit_lines = None
+        proposed_rem = None
+        root_cause = last_step.root_cause
+        visual_finding = last_step.visual_evidence
+
+        for s in reversed(steps):
+            if s.culprit_file and not culprit_file:
+                culprit_file = s.culprit_file
+                culprit_lines = s.culprit_line_range
+            if s.proposed_remediation and not proposed_rem:
+                proposed_rem = s.proposed_remediation
+            if s.root_cause and not root_cause:
+                root_cause = s.root_cause
+            if s.visual_evidence and not visual_finding:
+                visual_finding = s.visual_evidence
+
         correlated_diff = None
-        if last_step.culprit_file:
+        if culprit_file:
             correlated_diff = {
-                "file": last_step.culprit_file,
-                "lines": last_step.culprit_line_range or "unknown",
+                "file": culprit_file,
+                "lines": culprit_lines or "unknown",
             }
 
         patch_file = None
         verif_status = None
         verif_details = None
 
-        if last_step.proposed_remediation:
+        if proposed_rem:
             saved_patch = PatchVerifier.save_patch_file(
-                raw_patch=last_step.proposed_remediation,
-                target_file=last_step.culprit_file,
+                raw_patch=proposed_rem,
+                target_file=culprit_file,
             )
             patch_file = str(saved_patch)
             verif_status, verif_details = PatchVerifier.verify_patch(
                 patch_path=saved_patch,
-                raw_patch=last_step.proposed_remediation,
-                file_path=last_step.culprit_file,
+                raw_patch=proposed_rem,
+                file_path=culprit_file,
             )
 
         return IncidentReport(
@@ -173,11 +220,11 @@ Set "escalate_to": null.
             final_tier=last_step.tier,
             severity=last_step.severity,
             summary=bundle.summary,
-            root_cause=last_step.root_cause,
+            root_cause=root_cause or "Automated telemetry diagnosis completed.",
             correlated_diff=correlated_diff,
-            visual_finding=last_step.visual_evidence,
-            proposed_remediation=last_step.proposed_remediation,
-            confidence=last_step.confidence,
+            visual_finding=visual_finding,
+            proposed_remediation=proposed_rem or "",
+            confidence=max(s.confidence for s in steps) if steps else 0.90,
             patch_file_path=patch_file,
             verification_status=verif_status,
             verification_details=verif_details,

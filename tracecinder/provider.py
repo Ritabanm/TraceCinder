@@ -100,6 +100,27 @@ class MuseEmberProvider:
             tier, static_sys, dynamic_user, image_path, budget_ledger, incident_id
         )
 
+    def _extract_dynamic_signatures(self, context: str) -> Dict[str, str]:
+        import re
+        file_match = re.search(r'(?:file\s+["\']?|in\s+|at\s+|diff --git a/|--- a/)([a-zA-Z0-9_\-\./]+\.[a-zA-Z0-9_]+)', context, re.I)
+        file_path = file_match.group(1) if file_match else "src/handlers/main_controller.py"
+        if file_path.startswith("a/"):
+            file_path = file_path[2:]
+
+        line_match = re.search(r'(?:line\s+|:)(L?\d+)', context, re.I)
+        line_num = line_match.group(1).lstrip("L") if line_match else "42"
+
+        err_match = re.search(r'([A-Za-z0-9_]+(?:Error|Exception|Panic|Fault|Failure))[:\s]+([^\n\r]+)', context)
+        err_name = err_match.group(1) if err_match else "RuntimeExecutionError"
+        err_msg = err_match.group(2).strip() if err_match else "Unhandled anomaly detected in execution stream"
+
+        return {
+            "file": file_path,
+            "line": f"L{line_num}-L{line_num}",
+            "err_name": err_name,
+            "err_msg": err_msg,
+        }
+
     def _mock_tier_response(
         self,
         tier: EscalationTier,
@@ -111,6 +132,7 @@ class MuseEmberProvider:
     ) -> TriageStepResult:
         """Deterministic simulation for local offline preview and testing."""
         completion_tokens = 320
+        sig = self._extract_dynamic_signatures(context)
 
         if tier == EscalationTier.PULSE:
             usage = budget_ledger.record_usage(
@@ -129,17 +151,18 @@ class MuseEmberProvider:
                     raw_response="Detected 10 unthrottled refresh requests within 120ms resulting in 429.",
                 )
             elif incident_id != "INC-2026-9041":
-                # Dynamic response for custom uploaded incidents
                 return TriageStepResult(
                     tier=tier,
-                    fingerprint=f"ERR_CUSTOM_TELEMETRY: Anomaly isolated in custom execution log",
+                    fingerprint=f"ERR_{sig['err_name'].upper()}: {sig['err_msg'][:50]}",
                     severity=IncidentSeverity.HIGH,
-                    root_cause="Detected unhandled exception in ingested telemetry stream.",
-                    proposed_remediation="Trace failing execution path and correlate with git commit diff.",
-                    confidence=0.89,
+                    culprit_file=sig["file"],
+                    culprit_line_range=sig["line"],
+                    root_cause=f"Unhandled {sig['err_name']} in {sig['file']} at line {sig['line']}: '{sig['err_msg']}'.",
+                    proposed_remediation=f"Add defensive validation guard or fallback handling in {sig['file']}.",
+                    confidence=0.91,
                     usage=usage,
                     escalate_to=EscalationTier.DIFF_CORRELATOR,
-                    raw_response="Custom telemetry window extracted and fingerprinted.",
+                    raw_response=f"Custom telemetry extracted: {sig['err_name']} at {sig['file']}:{sig['line']}.",
                 )
             return TriageStepResult(
                 tier=tier,
@@ -174,16 +197,21 @@ class MuseEmberProvider:
             elif incident_id != "INC-2026-9041":
                 return TriageStepResult(
                     tier=tier,
-                    fingerprint="COMMIT_CORRELATION: 4e819fa ('Update payload handler and serializer')",
+                    fingerprint=f"COMMIT_CORRELATION: Correlated with {sig['file']}",
                     severity=IncidentSeverity.CRITICAL,
-                    culprit_file="src/handlers/main_controller.py",
-                    culprit_line_range="L31-L36",
-                    root_cause="Recent commit modified payload structure without fallback guard for missing fields.",
-                    proposed_remediation="Reinstate schema validation guard and fallback defaults.",
+                    culprit_file=sig["file"],
+                    culprit_line_range=sig["line"],
+                    root_cause=f"Recent change in {sig['file']} triggered {sig['err_name']}: {sig['err_msg']}.",
+                    proposed_remediation=(
+                        f"```python\n"
+                        f"- val = request.data['payload']\n"
+                        f"+ val = request.data.get('payload') or DEFAULT_FALLBACK\n"
+                        f"```"
+                    ),
                     confidence=0.95,
                     usage=usage,
                     escalate_to=EscalationTier.MULTIMODAL_RCA,
-                    raw_response="Correlated custom log exception with diff hunk.",
+                    raw_response=f"Correlated {sig['err_name']} with diff lines in {sig['file']}.",
                 )
             return TriageStepResult(
                 tier=tier,
@@ -227,17 +255,17 @@ class MuseEmberProvider:
             elif incident_id != "INC-2026-9041":
                 return TriageStepResult(
                     tier=tier,
-                    fingerprint="MULTIMODAL_CROSS_VALIDATED: UI Anomaly Correlated to Runtime Stack Trace",
+                    fingerprint=f"MULTIMODAL_CROSS_VALIDATED: {sig['err_name']} Visual Confirmation",
                     severity=IncidentSeverity.CRITICAL,
-                    culprit_file="src/handlers/main_controller.py",
-                    culprit_line_range="L32-L35",
-                    visual_evidence="Uploaded screenshot confirms UI error state and failing client request matching telemetry log burst.",
-                    root_cause="Client-side request failed due to missing fallback guard in payload handler.",
+                    culprit_file=sig["file"],
+                    culprit_line_range=sig["line"],
+                    visual_evidence=f"Uploaded artifact visually confirms failing client error state matching {sig['err_name']}.",
+                    root_cause=f"Runtime {sig['err_name']} in {sig['file']} causes failure to complete request: '{sig['err_msg']}'.",
                     proposed_remediation=(
-                        "```python\n"
-                        "- unhandled_state = request.data['payload']\n"
-                        "+ unhandled_state = request.data.get('payload') or DEFAULT_FALLBACK_STATE\n"
-                        "```"
+                        f"```python\n"
+                        f"- val = request.data['payload']\n"
+                        f"+ val = request.data.get('payload') or DEFAULT_FALLBACK\n"
+                        f"```"
                     ),
                     confidence=0.98,
                     usage=usage,
