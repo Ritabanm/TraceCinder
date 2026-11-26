@@ -247,7 +247,7 @@
         </div>
 
         <!-- Multimodal Visual Screenshot Display (DevTools Capture) -->
-        <div class="glass-card rounded-xl p-4 mb-5">
+        <div id="rca-visual-container" class="glass-card rounded-xl p-4 mb-5">
           <div class="flex items-center justify-between mb-3">
             <div class="text-[11px] uppercase tracking-wider font-semibold text-slate-400 flex items-center gap-1.5">
               <span>🖼</span> Multimodal Visual Inspection Artifact
@@ -505,14 +505,16 @@ TypeError: 'NoneType' object has no attribute 'strip'`
         document.getElementById('label-screen').textContent = custom.has_screenshot ? 'custom_screenshot.png' : '(none)';
         if (custom.screenshot_b64) {
           document.getElementById('rca-image').src = custom.screenshot_b64;
+          document.getElementById('rca-visual-container').classList.remove('hidden');
         } else {
-          document.getElementById('rca-image').src = 'incidents/sample_checkout_break/failure_screen.svg';
+          document.getElementById('rca-visual-container').classList.add('hidden');
         }
       } else if (STATIC_INCIDENTS[incId]) {
         document.getElementById('label-log').textContent = 'telemetry.log';
         document.getElementById('label-diff').textContent = 'recent.patch';
         document.getElementById('label-screen').textContent = 'failure_screen.svg';
         document.getElementById('rca-image').src = STATIC_INCIDENTS[incId].image;
+        document.getElementById('rca-visual-container').classList.remove('hidden');
       }
 
       document.getElementById('rca-output').classList.add('hidden');
@@ -673,9 +675,19 @@ TypeError: 'NoneType' object has no attribute 'strip'`
       document.getElementById('savings-text').textContent = `${multiplier}x cheaper vs. $${naiveCost.toFixed(4)} naive max-effort`;
 
       document.getElementById('rca-diagnosis').textContent = report.root_cause;
-      document.getElementById('rca-file').textContent = `File: ${report.correlated_diff ? report.correlated_diff.file : 'src/handlers/main_controller.py'}`;
-      document.getElementById('rca-lines').textContent = `Lines: ${report.correlated_diff ? report.correlated_diff.lines : 'L32-L35'}`;
-      document.getElementById('rca-visual').textContent = report.visual_finding || "UI error anomaly visually cross-validated with telemetry.";
+      document.getElementById('rca-file').textContent = `File: ${report.correlated_diff ? report.correlated_diff.file : 'src/app/handler.py'}`;
+      document.getElementById('rca-lines').textContent = `Lines: ${report.correlated_diff ? report.correlated_diff.lines : 'L42'}`;
+      
+      const visualContainer = document.getElementById('rca-visual-container');
+      if (visualContainer) {
+        const isCustomNoScreen = customIncidentsMap[currentIncident] && !customIncidentsMap[currentIncident].has_screenshot;
+        if (!isCustomNoScreen && report.visual_finding && report.visual_finding.trim() && report.visual_finding !== "(none)") {
+          visualContainer.classList.remove('hidden');
+          document.getElementById('rca-visual').textContent = report.visual_finding;
+        } else {
+          visualContainer.classList.add('hidden');
+        }
+      }
 
       document.getElementById('rca-patch-container').innerHTML = renderColorCodedDiff(report.proposed_remediation);
     }
@@ -732,7 +744,8 @@ TypeError: 'NoneType' object has no attribute 'strip'`
         logs: logs,
         diff: diff,
         screenshot_b64: customImageBase64,
-        has_screenshot: !!customImageBase64
+        has_screenshot: !!customImageBase64,
+        report: customReport
       };
 
       const list = document.getElementById('incident-list');
@@ -812,23 +825,8 @@ TypeError: 'NoneType' object has no attribute 'strip'`
       } catch (e) {}
 
       if (!reportData) {
-        if (customIncidentsMap[currentIncident]) {
-          reportData = {
-            incident_id: currentIncident,
-            final_tier: "tier_3_multimodal",
-            severity: "CRITICAL",
-            confidence: 0.98,
-            root_cause: `Detected unhandled exception in ${customIncidentsMap[currentIncident].service} correlating with git diff.`,
-            correlated_diff: { file: "src/handlers/main_controller.py", lines: "L32-L35" },
-            visual_finding: "Screenshot confirms UI error state matching telemetry log burst.",
-            proposed_remediation: "```python\n- unhandled_state = request.data['payload']\n+ unhandled_state = request.data.get('payload') or DEFAULT_FALLBACK_STATE\n```",
-            total_usage: { prompt_tokens: 1720, cached_prompt_tokens: 657, completion_tokens: 840, cost_usd: 0.00047 },
-            steps: [
-              { tier: "tier_1_pulse", usage: { cost_usd: 0.00013 } },
-              { tier: "tier_2_diff", usage: { cost_usd: 0.00015 } },
-              { tier: "tier_3_multimodal", usage: { cost_usd: 0.00019 } }
-            ]
-          };
+        if (customIncidentsMap[currentIncident] && customIncidentsMap[currentIncident].report) {
+          reportData = customIncidentsMap[currentIncident].report;
         } else if (STATIC_INCIDENTS[currentIncident]) {
           reportData = STATIC_INCIDENTS[currentIncident].report;
         }

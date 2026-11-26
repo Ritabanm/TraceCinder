@@ -263,7 +263,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </div>
 
         <!-- Multimodal Visual Screenshot Display (The Money Shot) -->
-        <div class="glass-card rounded-xl p-4 mb-5">
+        <div id="rca-visual-container" class="glass-card rounded-xl p-4 mb-5">
           <div class="flex items-center justify-between mb-3">
             <div class="text-[11px] uppercase tracking-wider font-semibold text-slate-400 flex items-center gap-1.5">
               <span>🖼</span> Multimodal Visual Inspection Artifact
@@ -469,14 +469,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         document.getElementById('label-screen').textContent = custom.has_screenshot ? 'custom_screenshot.png' : '(none)';
         if (custom.screenshot_b64) {
           document.getElementById('rca-image').src = custom.screenshot_b64;
+          document.getElementById('rca-visual-container').classList.remove('hidden');
         } else {
-          document.getElementById('rca-image').src = '/screenshot?id=' + incId;
+          document.getElementById('rca-visual-container').classList.add('hidden');
         }
       } else {
         document.getElementById('label-log').textContent = 'telemetry.log';
         document.getElementById('label-diff').textContent = 'recent.patch';
         document.getElementById('label-screen').textContent = 'failure_screen.svg';
         document.getElementById('rca-image').src = '/screenshot?id=' + incId;
+        document.getElementById('rca-visual-container').classList.remove('hidden');
       }
 
       document.getElementById('rca-output').classList.add('hidden');
@@ -720,9 +722,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById('savings-text').textContent = `${multiplier}x cheaper vs. $${naiveCost.toFixed(4)} naive max-effort`;
 
       document.getElementById('rca-diagnosis').textContent = report.root_cause;
-      document.getElementById('rca-file').textContent = `File: ${report.correlated_diff ? report.correlated_diff.file : 'src/handlers/main_controller.py'}`;
-      document.getElementById('rca-lines').textContent = `Lines: ${report.correlated_diff ? report.correlated_diff.lines : 'L32-L35'}`;
-      document.getElementById('rca-visual').textContent = report.visual_finding || "UI error anomaly visually cross-validated with telemetry.";
+      document.getElementById('rca-file').textContent = `File: ${report.correlated_diff ? report.correlated_diff.file : 'src/app/handler.py'}`;
+      document.getElementById('rca-lines').textContent = `Lines: ${report.correlated_diff ? report.correlated_diff.lines : 'L42'}`;
+      
+      const visualContainer = document.getElementById('rca-visual-container');
+      if (visualContainer) {
+        const isCustomNoScreen = customIncidentsMap[currentIncident] && !customIncidentsMap[currentIncident].has_screenshot;
+        if (!isCustomNoScreen && report.visual_finding && report.visual_finding.trim() && report.visual_finding !== "(none)") {
+          visualContainer.classList.remove('hidden');
+          document.getElementById('rca-visual').textContent = report.visual_finding;
+        } else {
+          visualContainer.classList.add('hidden');
+        }
+      }
 
       // Render clean color-coded diff
       document.getElementById('rca-patch-container').innerHTML = renderColorCodedDiff(report.proposed_remediation);
