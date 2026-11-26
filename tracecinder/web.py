@@ -106,26 +106,48 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <span id="feed-count-badge" class="text-[11px] px-2 py-0.5 rounded-full bg-slate-800/80 text-slate-400 font-mono">2 Samples Ready</span>
         </div>
 
-        <!-- Incident Selector Cards -->
-        <div class="space-y-2.5 max-h-[360px] overflow-y-auto pr-1" id="incident-list">
-          <!-- Card 1 -->
-          <div onclick="selectIncident('sample_checkout_break')" id="card-sample_checkout_break" class="glass-card rounded-xl p-3.5 border-l-4 border-l-rose-500 hover:border-pink-500 cursor-pointer transition ring-1 ring-rose-500/30">
-            <div class="flex items-center justify-between mb-1">
-              <span class="font-mono text-xs font-bold text-rose-400">INC-2026-9041</span>
-              <span class="text-[9px] uppercase font-bold px-2 py-0.5 rounded bg-rose-950/80 border border-rose-800 text-rose-300">CRITICAL</span>
+        <!-- Incident Selector Cards Split into Active vs Pre-Loaded -->
+        <div class="space-y-4 max-h-[380px] overflow-y-auto pr-1">
+          <!-- Section 1: Active Custom Ingested Incidents -->
+          <div>
+            <div class="text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-semibold mb-1.5 flex items-center justify-between">
+              <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span> Active Custom Incidents</span>
+              <span id="active-count" class="text-[9px] text-slate-500 font-mono">0 Active</span>
             </div>
-            <h3 class="text-xs font-semibold text-slate-200 mb-0.5">Checkout Session 500 Burst</h3>
-            <p class="text-[11px] text-slate-400">checkout-gateway • Avatar Serializer</p>
+            <div id="custom-incident-list" class="space-y-2">
+              <div id="custom-empty-state" class="p-2.5 rounded-xl border border-dashed border-slate-800 text-center text-[10px] text-slate-500 font-mono">
+                No custom uploads yet. Click "+ New Custom Triage" below.
+              </div>
+            </div>
           </div>
 
-          <!-- Card 2 -->
-          <div onclick="selectIncident('sample_auth_token_loop')" id="card-sample_auth_token_loop" class="glass-card rounded-xl p-3.5 border-l-4 border-l-amber-500 hover:border-amber-400 cursor-pointer transition">
-            <div class="flex items-center justify-between mb-1">
-              <span class="font-mono text-xs font-bold text-amber-400">INC-2026-9042</span>
-              <span class="text-[9px] uppercase font-bold px-2 py-0.5 rounded bg-amber-950/80 border border-amber-800 text-amber-300">HIGH</span>
+          <!-- Section 2: Pre-Loaded Benchmark Samples -->
+          <div>
+            <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold mb-1.5 flex items-center justify-between">
+              <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Pre-Loaded Benchmark Samples</span>
+              <span class="text-[9px] text-slate-500 font-mono">2 Datasets</span>
             </div>
-            <h3 class="text-xs font-semibold text-slate-200 mb-0.5">Auth 429 Retry Storm</h3>
-            <p class="text-[11px] text-slate-400">auth-gateway • Token Interceptor</p>
+            <div class="space-y-2" id="sample-incident-list">
+              <!-- Card 1 -->
+              <div onclick="selectIncident('sample_checkout_break')" id="card-sample_checkout_break" class="glass-card rounded-xl p-3 border-l-4 border-l-rose-500 hover:border-pink-500 cursor-pointer transition ring-1 ring-rose-500/30">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-mono text-xs font-bold text-rose-400">INC-2026-9041</span>
+                  <span class="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-rose-950/80 border border-rose-800 text-rose-300">BENCHMARK</span>
+                </div>
+                <h3 class="text-xs font-semibold text-slate-200 mb-0.5">Checkout Session 500 Burst</h3>
+                <p class="text-[11px] text-slate-400">checkout-gateway • Avatar Serializer</p>
+              </div>
+
+              <!-- Card 2 -->
+              <div onclick="selectIncident('sample_auth_token_loop')" id="card-sample_auth_token_loop" class="glass-card rounded-xl p-3 border-l-4 border-l-amber-500 hover:border-amber-400 cursor-pointer transition">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-mono text-xs font-bold text-amber-400">INC-2026-9042</span>
+                  <span class="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-800 text-amber-300">BENCHMARK</span>
+                </div>
+                <h3 class="text-xs font-semibold text-slate-200 mb-0.5">Auth 429 Retry Storm</h3>
+                <p class="text-[11px] text-slate-400">auth-gateway • Token Interceptor</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -453,7 +475,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     function selectIncident(incId) {
       currentIncident = incId;
-      document.querySelectorAll('#incident-list > div').forEach(el => {
+      document.querySelectorAll('#custom-incident-list > div, #sample-incident-list > div').forEach(el => {
         el.classList.remove('ring-1', 'ring-rose-500/30', 'ring-amber-500/30', 'ring-pink-500/40', 'border-pink-500');
       });
       const activeCard = document.getElementById('card-' + incId);
@@ -660,12 +682,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <h3 class="text-xs font-semibold text-slate-200 mb-0.5 truncate">${summary}</h3>
           <p class="text-[11px] text-slate-400 truncate">${service} • Direct Upload</p>
         `;
-        list.prepend(card);
+        const emptyState = document.getElementById('custom-empty-state');
+        if (emptyState) emptyState.classList.add('hidden');
 
-        // Update badge
-        const totalIncidents = document.querySelectorAll('#incident-list > div').length;
+        const customList = document.getElementById('custom-incident-list');
+        customList.prepend(card);
+
         const customCount = Object.keys(customIncidentsMap).length;
-        document.getElementById('feed-count-badge').textContent = customCount > 0 ? `${totalIncidents} Total (${customCount} Custom)` : '2 Samples Ready';
+        document.getElementById('active-count').textContent = `${customCount} Active`;
+        document.getElementById('feed-count-badge').textContent = `${customCount} Active • 2 Samples`;
 
         closeCustomModal();
         selectIncident(customId);
