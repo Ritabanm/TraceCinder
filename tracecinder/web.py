@@ -897,7 +897,10 @@ class TraceCinderHTTPHandler(BaseHTTPRequestHandler):
                     target_dir = self.incidents_base_dir / "sample_checkout_break"
                 bundle = load_incident_from_dir(target_dir)
 
-            provider = MuseEmberProvider(mock_mode=True)
+            # If META_API_KEY is present in .env, run live Meta Model API (muse-ember-1.0)!
+            # Otherwise or if mock is explicitly requested, fall back cleanly to offline simulator.
+            mock_override = post_body.get("mock", None)
+            provider = MuseEmberProvider(mock_mode=mock_override)
             escalator = ReasoningEscalator(provider=provider, budget_ledger=self.ledger)
             report = escalator.run_triage(bundle)
 
@@ -967,7 +970,10 @@ def start_server(port: int = 8080, ledger_path: Optional[Path] = None) -> None:
     )
 
     server = ThreadingHTTPServer(("127.0.0.1", port), handler_cls)
+    p = MuseEmberProvider()
+    mode_desc = "Connected (Meta Model API muse-ember-1.0)" if not p.mock_mode else "Offline Simulator (add META_API_KEY to .env for live)"
     print(f"\n🚀 TraceCinder Dashboard live at: http://localhost:{port}")
+    print(f"🤖 Inference Engine:              {mode_desc}")
     print(f"📊 Budget Ledger active at:       {lpath}")
     print(f"📁 Multi-incident library:        {incidents_dir}")
     print("Press Ctrl+C to stop.\n")
