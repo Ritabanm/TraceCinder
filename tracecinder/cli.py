@@ -78,6 +78,9 @@ def cmd_triage(args: argparse.Namespace) -> None:
         print(f"   Visual UI:  {bundle.screenshot_path}")
 
     provider = MuseEmberProvider(mock_mode=args.mock)
+    mode_label = "Local Offline Simulator (--mock)" if provider.mock_mode else "Live Meta Model API (muse-ember-1.0)"
+    print(f"   Execution Mode: {mode_label}")
+
     escalator = ReasoningEscalator(provider=provider, budget_ledger=ledger)
 
     report = escalator.run_triage(bundle)
@@ -160,7 +163,8 @@ def main() -> None:
     )
     parser.add_argument("--ledger", type=str, help="Path to custom budget ledger JSON")
     parser.add_argument("--cap", type=float, help="Override budget cap in USD (default: $10.00)")
-    parser.add_argument("--mock", action="store_true", default=False, help="Run in local offline mock mode")
+    parser.add_argument("--mock", dest="mock", action="store_true", default=None, help="Run in local offline mock mode")
+    parser.add_argument("--live", dest="mock", action="store_false", help="Run against live Meta Model API (muse-ember-1.0)")
     parser.add_argument("--ui", action="store_true", help="Launch interactive web trace viewer")
 
     subparsers = parser.add_subparsers(dest="command")
@@ -172,7 +176,8 @@ def main() -> None:
     triage_parser.add_argument("--screen", type=str, help="Path to UI failure screenshot / screen recording frame")
     triage_parser.add_argument("--service", type=str, default="core-service", help="Target service name")
     triage_parser.add_argument("--verify", action="store_true", default=True, help="Run ast.parse and git apply check")
-    triage_parser.add_argument("--mock", action="store_true", default=True, help="Run in local offline mock mode")
+    triage_parser.add_argument("--mock", dest="mock", action="store_true", default=None, help="Run in local offline mock mode")
+    triage_parser.add_argument("--live", dest="mock", action="store_false", help="Run against live Meta Model API (muse-ember-1.0)")
 
     budget_parser = subparsers.add_parser("budget", help="Inspect current budget status and token ledger")
 

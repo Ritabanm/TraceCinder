@@ -60,8 +60,12 @@ TASK:
         )
         steps.append(step1)
 
-        # Check if escalation required
-        if step1.escalate_to != EscalationTier.DIFF_CORRELATOR or max_tier == EscalationTier.PULSE:
+        # Check if escalation to Tier 2 required (either model requested it, or severe incident with git diff present)
+        should_escalate_t2 = (
+            step1.escalate_to == EscalationTier.DIFF_CORRELATOR
+            or (bundle.diff_path and step1.severity in (IncidentSeverity.HIGH, IncidentSeverity.CRITICAL))
+        )
+        if not should_escalate_t2 or max_tier == EscalationTier.PULSE:
             return self._build_report(bundle, steps)
 
         # -------------------------------------------------------------------------
@@ -82,7 +86,7 @@ GIT COMMIT DIFF:
 TASK:
 1. Cross-reference the stack trace / error with the git diff lines.
 2. Identify the culprit file and line numbers.
-3. If UI anomalies or screenshots are present, escalate to "tier_3_multimodal".
+3. If UI anomalies or screenshots are present, set "escalate_to": "tier_3_multimodal".
 """
         step2 = self.provider.execute_tier(
             tier=EscalationTier.DIFF_CORRELATOR,
@@ -92,7 +96,12 @@ TASK:
         )
         steps.append(step2)
 
-        if step2.escalate_to != EscalationTier.MULTIMODAL_RCA or max_tier == EscalationTier.DIFF_CORRELATOR:
+        # Check if escalation to Tier 3 required (either model requested it, or screenshot artifact is present)
+        should_escalate_t3 = (
+            step2.escalate_to == EscalationTier.MULTIMODAL_RCA
+            or bool(bundle.screenshot_path)
+        )
+        if not should_escalate_t3 or max_tier == EscalationTier.DIFF_CORRELATOR:
             return self._build_report(bundle, steps)
 
         # -------------------------------------------------------------------------
@@ -100,13 +109,14 @@ TASK:
         # -------------------------------------------------------------------------
         tier3_prompt = f"""[INCIDENT TELEMETRY - TIER 3 MULTIMODAL RCA]
 Service: {bundle.service}
-Culprit Code: {step2.culprit_file} ({step2.culprit_line_range})
-Diff Analysis: {step2.root_cause}
+Culprit Code: {step2.culprit_file or 'Identified in recent diff'} ({step2.culprit_line_range or ''})
+Diff Analysis: {step2.root_cause or step1.root_cause}
 
 TASK:
 1. Analyze the attached UI failure screenshot / screen recording frame.
 2. Correlate visual error states (modal locks, HTTP error toast, blank canvas) with backend logs and commit diff.
-3. Formulate the definitive Root Cause Analysis (RCA) and generate a verified code remediation patch.
+3. Formulate the definitive Root Cause Analysis (RCA) and generate a verified unified git diff or code fix in "proposed_remediation".
+Set "escalate_to": null.
 """
         step3 = self.provider.execute_tier(
             tier=EscalationTier.MULTIMODAL_RCA,

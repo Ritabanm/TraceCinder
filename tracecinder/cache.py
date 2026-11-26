@@ -14,8 +14,18 @@ DIAGNOSTIC RUBRIC:
 4. In Tier 3 (Multimodal RCA): Correlate frontend error visual artifacts with backend telemetry and propose concrete code patches.
 
 OUTPUT FORMAT REQUIREMENTS:
-Always return your output as valid JSON matching the schema for the requested tier.
-Do not include preamble or conversational filler outside the JSON structure.
+Always return your output as valid JSON with the following keys:
+- "fingerprint": string (e.g. ERR_...)
+- "severity": "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+- "root_cause": string explaining the underlying fault
+- "culprit_file": string or null (path to the offending code file)
+- "culprit_line_range": string or null (e.g. "L42-L46")
+- "visual_evidence": string or null (findings from UI screenshot or visual artifact)
+- "proposed_remediation": string or null (unified git diff hunk or code fix)
+- "confidence": float between 0.0 and 1.0
+- "escalate_to": "tier_2_diff" | "tier_3_multimodal" | null (or null if final)
+
+Do not include conversational preamble or markdown backticks outside the JSON object.
 """
 
 

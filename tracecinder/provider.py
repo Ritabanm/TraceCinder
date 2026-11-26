@@ -9,7 +9,7 @@ from tracecinder.budget import BudgetLedger
 from tracecinder.cache import format_cache_friendly_prompt
 from tracecinder.models import EscalationTier, IncidentSeverity, TriageStepResult
 
-DEFAULT_MODEL = "meta-llama/muse-ember-1.0"
+DEFAULT_MODEL = "muse-ember-1.0"
 
 
 def _load_env_if_present() -> None:
@@ -36,20 +36,42 @@ class MuseEmberProvider:
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         model: str = DEFAULT_MODEL,
-        mock_mode: bool = False,
+        mock_mode: Optional[bool] = None,
     ):
         self.api_key = api_key or os.environ.get("META_API_KEY") or os.environ.get("MUSE_API_KEY")
         self.base_url = base_url or os.environ.get("META_API_BASE", "https://api.meta.ai/v1")
         self.model = model
-        self.mock_mode = mock_mode or (not self.api_key)
+        if mock_mode is not None:
+            self.mock_mode = mock_mode
+        else:
+            # If API key is present, default to live Meta Model API!
+            self.mock_mode = not bool(self.api_key)
 
-    def _encode_image_b64(self, image_path: str) -> Optional[str]:
+    def _encode_image_b64(self, image_path: str) -> Tuple[Optional[str], str]:
         if image_path.startswith("data:image/"):
-            return image_path.split(",", 1)[-1]
+            header, data = image_path.split(",", 1)
+            mime = header.split(";")[0].replace("data:", "")
+            return data, mime
         if not os.path.exists(image_path):
-            return None
+            return None, "image/png"
+        
+        # If an SVG was passed, check if a raster PNG sibling exists
+        if image_path.endswith(".svg"):
+            png_sibling = image_path[:-4] + ".png"
+            if os.path.exists(png_sibling):
+                image_path = png_sibling
+
+        ext = os.path.splitext(image_path)[1].lower()
+        mime_map = {
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".webp": "image/webp",
+            ".gif": "image/gif",
+        }
+        mime = mime_map.get(ext, "image/png")
         with open(image_path, "rb") as f:
-            return base64.b64encode(f.read()).decode("utf-8")
+            return base64.b64encode(f.read()).decode("utf-8"), mime
 
     def execute_tier(
         self,
@@ -264,13 +286,13 @@ class MuseEmberProvider:
 
         user_content: Any = user_prompt
         if image_path and os.path.exists(image_path):
-            b64_img = self._encode_image_b64(image_path)
+            b64_img, mime = self._encode_image_b64(image_path)
             if b64_img:
                 user_content = [
                     {"type": "text", "text": user_prompt},
                     {
                         "type": "image_url",
-                        "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"},
+                        "image_url": {"url": f"data:{mime};base64,{b64_img}"},
                     },
                 ]
 
@@ -281,6 +303,7 @@ class MuseEmberProvider:
             "messages": messages,
             "temperature": 0.1,
             "response_format": {"type": "json_object"},
+            "max_tokens": 3000,
         }
 
         req = urllib.request.Request(
@@ -293,7 +316,7 @@ class MuseEmberProvider:
             method="POST",
         )
 
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=60) as resp:
             data = json.loads(resp.read().decode("utf-8"))
 
         usage_data = data.get("usage", {})
@@ -301,21 +324,69 @@ class MuseEmberProvider:
         cached_tokens = usage_data.get("prompt_tokens_details", {}).get("cached_tokens", 0)
         completion_tokens = usage_data.get("completion_tokens", 250)
 
-        usage = budget_ledger.record_usage(prompt_tokens, cached_tokens, completion_tokens)
-        content_str = data["choices"][0]["message"]["content"]
-        parsed = json.loads(content_str)
+        usage = budget_ledger.record_usage(
+            prompt_tokens=prompt_tokens,
+            cached_tokens=cached_tokens,
+            completion_tokens=completion_tokens,
+            tier_name=tier.value,
+            incident_id=incident_id,
+        )
+
+        content_str = data["choices"][0]["message"].get("content") or ""
+        
+        # Robust JSON extraction
+        trimmed = content_str.strip()
+        if trimmed.startswith("```json"):
+            trimmed = trimmed[7:]
+        elif trimmed.startswith("```"):
+            trimmed = trimmed[3:]
+        if trimmed.endswith("```"):
+            trimmed = trimmed[:-3]
+        trimmed = trimmed.strip()
+
+        parsed: Dict[str, Any] = {}
+        try:
+            parsed = json.loads(trimmed)
+        except Exception:
+            import re
+            m = re.search(r"\{.*\}", content_str, re.DOTALL)
+            if m:
+                try:
+                    parsed = json.loads(m.group(0))
+                except Exception:
+                    parsed = {}
+
+        # Safe severity parsing
+        raw_sev = str(parsed.get("severity", "HIGH")).upper()
+        try:
+            severity = IncidentSeverity(raw_sev)
+        except ValueError:
+            severity = IncidentSeverity.HIGH
+
+        # Safe escalation parsing
+        raw_esc = parsed.get("escalate_to")
+        escalate_tier = None
+        if raw_esc:
+            try:
+                escalate_tier = EscalationTier(raw_esc)
+            except ValueError:
+                esc_str = str(raw_esc).lower()
+                if "diff" in esc_str or "tier_2" in esc_str:
+                    escalate_tier = EscalationTier.DIFF_CORRELATOR
+                elif "multi" in esc_str or "tier_3" in esc_str:
+                    escalate_tier = EscalationTier.MULTIMODAL_RCA
 
         return TriageStepResult(
             tier=tier,
             fingerprint=parsed.get("fingerprint", "GENERIC_EXCEPTION"),
-            severity=IncidentSeverity(parsed.get("severity", "MEDIUM").upper()),
+            severity=severity,
             culprit_file=parsed.get("culprit_file"),
             culprit_line_range=parsed.get("culprit_line_range"),
             visual_evidence=parsed.get("visual_evidence"),
             root_cause=parsed.get("root_cause", ""),
             proposed_remediation=parsed.get("proposed_remediation", ""),
-            confidence=float(parsed.get("confidence", 0.85)),
+            confidence=float(parsed.get("confidence", 0.92)),
             usage=usage,
-            escalate_to=EscalationTier(parsed["escalate_to"]) if parsed.get("escalate_to") else None,
+            escalate_to=escalate_tier,
             raw_response=content_str,
         )
