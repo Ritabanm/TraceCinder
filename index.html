@@ -960,6 +960,20 @@ TypeError: 'NoneType' object has no attribute 'strip'`
     }
 
     function openCustomModal() {
+      // Reset modal inputs to prevent previous bug evidence from leaking
+      document.getElementById('github-import-url').value = "";
+      const statusEl = document.getElementById('github-import-status');
+      if (statusEl) {
+        statusEl.className = "hidden mt-1.5 text-[10px] font-mono";
+        statusEl.textContent = "";
+      }
+      document.getElementById('custom-service').value = "";
+      document.getElementById('custom-summary').value = "";
+      document.getElementById('custom-logs').value = "";
+      document.getElementById('custom-diff').value = "";
+      clearCustomImage();
+      clearVoiceRecording();
+
       document.getElementById('custom-modal').classList.remove('hidden');
     }
 
@@ -1321,6 +1335,7 @@ TypeError: 'NoneType' object has no attribute 'strip'`
 
         // 4. If Pull Request, fetch the diff directly via GitHub API
         let diffFetched = false;
+        const diffInput = document.getElementById('custom-diff');
         if (issueData.pull_request) {
           statusEl.textContent = `Fetching PR git diff from ${owner}/${repo}...`;
           try {
@@ -1329,13 +1344,14 @@ TypeError: 'NoneType' object has no attribute 'strip'`
             });
             if (diffRes.ok) {
               const diffText = await diffRes.text();
-              const diffInput = document.getElementById('custom-diff');
               diffInput.value = diffText;
               diffFetched = true;
             }
           } catch (diffErr) {
             console.warn("Could not fetch PR diff:", diffErr);
           }
+        } else {
+          diffInput.value = "";
         }
 
         statusEl.className = "mt-1.5 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold";
