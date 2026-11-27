@@ -186,6 +186,52 @@
           </div>
         </div>
       </div>
+
+      <!-- Model Context Protocol (MCP) Server Card -->
+      <div class="glass rounded-2xl p-5 glow-cyan border border-slate-800/80">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+            <span class="text-cyan-400">🔌</span> IDE / Git MCP Server
+          </h2>
+          <span class="text-[9px] px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-800 text-emerald-300 font-mono">stdio active</span>
+        </div>
+
+        <p class="text-[11px] text-slate-400 mb-3 leading-relaxed">
+          Connect TraceCinder to Cursor, Antigravity, or VS Code to query real-time AST diffs, stack traces, and verified draft patches directly in your editor.
+        </p>
+
+        <!-- Server Spec Pills -->
+        <div class="bg-slate-950/80 rounded-xl p-3 border border-slate-800/80 font-mono text-[11px] space-y-1.5 mb-3">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-500">Server:</span>
+            <span class="text-slate-200 font-semibold select-all">tracecinder</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-500">Command:</span>
+            <span class="text-cyan-400 select-all font-semibold">cinder-mcp</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-500">Args:</span>
+            <span class="text-slate-300 select-all">--workspace .</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-500">Transport:</span>
+            <span class="text-pink-400">stdio (JSON-RPC 2.0)</span>
+          </div>
+        </div>
+
+        <!-- Quick Copy Actions -->
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="copyMcpConfig('cursor')" class="py-1.5 px-2.5 rounded-lg bg-slate-800/90 hover:bg-slate-750 border border-slate-700/80 text-cyan-300 hover:text-white text-[11px] font-mono flex items-center justify-center gap-1.5 transition">
+            <span>📋</span>
+            <span id="btn-copy-cursor">Copy Cursor JSON</span>
+          </button>
+          <button onclick="openMcpModal()" class="py-1.5 px-2.5 rounded-lg bg-slate-800/90 hover:bg-slate-750 border border-slate-700/80 text-pink-300 hover:text-white text-[11px] font-mono flex items-center justify-center gap-1.5 transition">
+            <span>⚙️</span>
+            <span>Connect IDE</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Right Column: Escalation Pipeline & Results -->
@@ -472,6 +518,67 @@
     </div>
   </div>
 
+  <!-- Modal: MCP Server Connection Guide -->
+  <div id="mcp-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 hidden">
+    <div class="glass max-w-2xl w-full rounded-2xl p-6 border border-slate-700 shadow-2xl flex flex-col max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">🔌</span>
+          <div>
+            <h3 class="text-base font-bold text-slate-200">Connect TraceCinder MCP to Your IDE</h3>
+            <p class="text-xs text-slate-400">Model Context Protocol (JSON-RPC 2.0 stdio server) • Read-Only Git Protected</p>
+          </div>
+        </div>
+        <button onclick="closeMcpModal()" class="text-slate-400 hover:text-white font-mono text-sm px-2 py-1 rounded hover:bg-slate-800">✕</button>
+      </div>
+
+      <div class="space-y-4 text-xs">
+        <!-- Tabs for IDEs -->
+        <div class="flex border-b border-slate-800 gap-2 pb-2">
+          <button id="tab-cursor" onclick="switchMcpTab('cursor')" class="px-3 py-1 rounded-lg bg-cyan-950 border border-cyan-800 text-cyan-300 font-mono font-medium">Cursor</button>
+          <button id="tab-antigravity" onclick="switchMcpTab('antigravity')" class="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-mono font-medium hover:text-slate-200">Antigravity</button>
+          <button id="tab-claude" onclick="switchMcpTab('claude')" class="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-mono font-medium hover:text-slate-200">Claude Code</button>
+          <button id="tab-vscode" onclick="switchMcpTab('vscode')" class="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-mono font-medium hover:text-slate-200">VS Code</button>
+        </div>
+
+        <!-- Code Block Preview -->
+        <div class="relative">
+          <div class="flex items-center justify-between bg-slate-950 px-3 py-2 rounded-t-lg border-t border-x border-slate-800 text-[10px] font-mono text-slate-400">
+            <span id="mcp-file-path">.cursor/mcp.json or Cursor Settings &gt; Features &gt; MCP</span>
+            <button onclick="copyActiveMcpSnippet()" class="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-mono">
+              <span>📋</span> <span id="mcp-modal-copy-btn">Copy Config</span>
+            </button>
+          </div>
+          <pre id="mcp-code-preview" class="p-3 bg-slate-950/90 rounded-b-lg border border-slate-800 font-mono text-[11px] text-emerald-300 overflow-x-auto whitespace-pre leading-relaxed"></pre>
+        </div>
+
+        <!-- Capabilities & Tools Reference -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5 font-mono text-[11px]">
+              <span class="text-amber-400">📦</span> Exposed MCP Resources
+            </div>
+            <ul class="space-y-1 font-mono text-[10px] text-slate-400">
+              <li><code class="text-cyan-400">git://working-tree/diff</code></li>
+              <li><code class="text-cyan-400">ide://active-context</code></li>
+              <li><code class="text-cyan-400">tracecinder://telemetry/budget</code></li>
+            </ul>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5 font-mono text-[11px]">
+              <span class="text-pink-400">⚡</span> Exposed MCP Tools
+            </div>
+            <ul class="space-y-1 font-mono text-[10px] text-slate-400">
+              <li><code class="text-pink-400">analyze_incident</code></li>
+              <li><code class="text-pink-400">propose_fix_diff</code></li>
+              <li><code class="text-pink-400">get_forensic_telemetry</code></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <footer class="border-t border-slate-800/80 py-4 text-center text-xs text-slate-500 font-mono">
     TraceCinder • Powered by Meta muse-ember-1.0 • Built for Cerebral Valley Hackathon
   </footer>
@@ -487,6 +594,89 @@
     let recordTimerInterval = null;
     let recordSeconds = 0;
     let customIncidentsMap = {};
+
+    const MCP_SNIPPETS = {
+      cursor: {
+        path: ".cursor/mcp.json or Cursor Settings > Features > MCP",
+        code: JSON.stringify({
+          "mcpServers": {
+            "tracecinder": {
+              "command": "cinder-mcp",
+              "args": ["--workspace", "${workspaceFolder}"]
+            }
+          }
+        }, null, 2)
+      },
+      antigravity: {
+        path: "~/.gemini/antigravity/mcp_servers.json or .agents/plugins/tracecinder",
+        code: JSON.stringify({
+          "mcpServers": {
+            "tracecinder": {
+              "command": "cinder-mcp",
+              "args": ["--workspace", "${workspaceFolder}"]
+            }
+          }
+        }, null, 2)
+      },
+      claude: {
+        path: "Terminal (CLI command) or ~/.claude/mcp.json",
+        code: "claude mcp add tracecinder cinder-mcp -- --workspace ."
+      },
+      vscode: {
+        path: ".vscode/mcp.json",
+        code: JSON.stringify({
+          "servers": {
+            "tracecinder": {
+              "type": "stdio",
+              "command": "cinder-mcp",
+              "args": ["--workspace", "${workspaceFolder}"]
+            }
+          }
+        }, null, 2)
+      }
+    };
+
+    let activeMcpTab = "cursor";
+
+    function openMcpModal() {
+      switchMcpTab('cursor');
+      document.getElementById('mcp-modal').classList.remove('hidden');
+    }
+
+    function closeMcpModal() {
+      document.getElementById('mcp-modal').classList.add('hidden');
+    }
+
+    function switchMcpTab(tab) {
+      activeMcpTab = tab;
+      const tabs = ['cursor', 'antigravity', 'claude', 'vscode'];
+      tabs.forEach(t => {
+        const el = document.getElementById('tab-' + t);
+        if (t === tab) {
+          el.className = "px-3 py-1 rounded-lg bg-cyan-950 border border-cyan-800 text-cyan-300 font-mono font-medium";
+        } else {
+          el.className = "px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-mono font-medium hover:text-slate-200";
+        }
+      });
+      document.getElementById('mcp-file-path').textContent = MCP_SNIPPETS[tab].path;
+      document.getElementById('mcp-code-preview').textContent = MCP_SNIPPETS[tab].code;
+    }
+
+    function copyActiveMcpSnippet() {
+      const code = MCP_SNIPPETS[activeMcpTab].code;
+      navigator.clipboard.writeText(code);
+      const btn = document.getElementById('mcp-modal-copy-btn');
+      btn.textContent = "Copied!";
+      setTimeout(() => { btn.textContent = "Copy Config"; }, 2000);
+    }
+
+    function copyMcpConfig(type) {
+      const code = MCP_SNIPPETS[type || 'cursor'].code;
+      navigator.clipboard.writeText(code);
+      const btn = document.getElementById('btn-copy-cursor');
+      btn.textContent = "Copied!";
+      setTimeout(() => { btn.textContent = "Copy Cursor JSON"; }, 2000);
+    }
 
     // Built-in Database for Static Hosting (GitHub Pages compatibility)
     const STATIC_INCIDENTS = {
