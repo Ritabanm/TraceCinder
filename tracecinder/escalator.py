@@ -41,6 +41,7 @@ class ReasoningEscalator:
         # -------------------------------------------------------------------------
         has_diff = bool(bundle.diff_path and Path(bundle.diff_path).exists())
         has_screen = bool(bundle.screenshot_path and Path(bundle.screenshot_path).exists())
+        has_audio = bool(bundle.audio_path and (Path(bundle.audio_path).exists() or str(bundle.audio_path).startswith("data:")))
 
         tier1_prompt = f"""[INCIDENT TELEMETRY - TIER 1 PULSE]
 Service: {bundle.service}
@@ -48,6 +49,7 @@ Timestamp: {bundle.timestamp}
 Summary: {bundle.summary}
 Has Commit Diff: {has_diff}
 Has UI Screenshot: {has_screen}
+Has Engineer Voice Note: {has_audio}
 
 RAW TELEMETRY LOG WINDOW (<200K Chunks):
 {anomaly_window}
@@ -57,8 +59,8 @@ TASK:
 2. Determine severity (LOW, MEDIUM, HIGH, CRITICAL).
 3. Identify culprit file and line numbers from stack trace if visible.
 4. If a commit diff is available to correlate, set "escalate_to": "tier_2_diff".
-5. If no diff is available but a UI screenshot is present, set "escalate_to": "tier_3_multimodal".
-6. If neither diff nor screenshot is present, formulate root_cause and propose an atomic code remediation patch in "proposed_remediation" directly from the stack trace and set "escalate_to": null.
+5. If no diff is available but a UI screenshot or voice note is present, set "escalate_to": "tier_3_multimodal".
+6. If neither diff nor screenshot nor voice note is present, formulate root_cause and propose an atomic code remediation patch in "proposed_remediation" directly from the stack trace and set "escalate_to": null.
 """
         step1 = self.provider.execute_tier(
             tier=EscalationTier.PULSE,
@@ -68,24 +70,29 @@ TASK:
         )
         steps.append(step1)
 
-        # Handle direct escalation to Tier 3 if no diff exists but screenshot is present
-        if not has_diff and has_screen and max_tier != EscalationTier.PULSE:
+        # Handle direct escalation to Tier 3 if no diff exists but screenshot/audio is present
+        if not has_diff and (has_screen or has_audio) and max_tier != EscalationTier.PULSE:
+            voice_prompt_item = (
+                "4. Listen to the attached native voice note describing the bug symptoms/expected behavior. In 'spoken_context', state the engineer's spoken symptom and align it with the failure analysis.\n"
+                if has_audio else ""
+            )
             tier3_direct_prompt = f"""[INCIDENT TELEMETRY - TIER 3 MULTIMODAL RCA]
 Service: {bundle.service}
 Culprit Hint: {step1.culprit_file or 'Identified in stack trace'} ({step1.culprit_line_range or ''})
 Stack Trace Findings: {step1.root_cause}
 
 TASK:
-1. Analyze the attached UI failure screenshot / screen recording frame.
+1. Analyze the attached UI failure screenshot / screen recording frame (if present).
 2. Correlate visual error states (modal locks, HTTP error toast, blank canvas, console error) with backend logs and stack trace.
 3. Formulate the definitive Root Cause Analysis (RCA) and generate a verified unified git diff or code fix in "proposed_remediation".
-Set "escalate_to": null.
+{voice_prompt_item}Set "escalate_to": null.
 """
             step3 = self.provider.execute_tier(
                 tier=EscalationTier.MULTIMODAL_RCA,
                 prompt_context=tier3_direct_prompt,
                 budget_ledger=self.budget_ledger,
                 image_path=bundle.screenshot_path,
+                audio_path=bundle.audio_path,
                 incident_id=bundle.incident_id,
             )
             steps.append(step3)
@@ -126,33 +133,39 @@ TASK:
         )
         steps.append(step2)
 
-        # Check if escalation to Tier 3 required (either model requested it, or screenshot artifact is present)
+        # Check if escalation to Tier 3 required (either model requested it, or screenshot/audio artifact is present)
         should_escalate_t3 = (
             step2.escalate_to == EscalationTier.MULTIMODAL_RCA
             or has_screen
+            or has_audio
         )
-        if not should_escalate_t3 or not has_screen or max_tier == EscalationTier.DIFF_CORRELATOR:
+        if not should_escalate_t3 or (not has_screen and not has_audio) or max_tier == EscalationTier.DIFF_CORRELATOR:
             return self._build_report(bundle, steps)
 
         # -------------------------------------------------------------------------
-        # TIER 3: Multimodal RCA (Correlate UI Screenshot/Clip + Diff + Stack Trace)
+        # TIER 3: Multimodal RCA (Correlate UI Screenshot/Clip + Audio + Diff + Stack Trace)
         # -------------------------------------------------------------------------
+        voice_task_item = (
+            "4. Cross-reference the attached engineer voice note description (symptom / intended behavior) with the visual capture and diff. State this alignment in 'spoken_context' and cite it in 'root_cause'.\n"
+            if has_audio else ""
+        )
         tier3_prompt = f"""[INCIDENT TELEMETRY - TIER 3 MULTIMODAL RCA]
 Service: {bundle.service}
 Culprit Code: {step2.culprit_file or step1.culprit_file or 'Identified in recent diff'} ({step2.culprit_line_range or step1.culprit_line_range or ''})
 Diff Analysis: {step2.root_cause or step1.root_cause}
 
 TASK:
-1. Analyze the attached UI failure screenshot / screen recording frame.
+1. Analyze the attached UI failure screenshot / screen recording frame (if present).
 2. Correlate visual error states (modal locks, HTTP error toast, blank canvas) with backend logs and commit diff.
 3. Formulate the definitive Root Cause Analysis (RCA) and generate a verified unified git diff or code fix in "proposed_remediation".
-Set "escalate_to": null.
+{voice_task_item}Set "escalate_to": null.
 """
         step3 = self.provider.execute_tier(
             tier=EscalationTier.MULTIMODAL_RCA,
             prompt_context=tier3_prompt,
             budget_ledger=self.budget_ledger,
             image_path=bundle.screenshot_path,
+            audio_path=bundle.audio_path,
             incident_id=bundle.incident_id,
         )
         steps.append(step3)
@@ -180,6 +193,7 @@ Set "escalate_to": null.
         proposed_rem = None
         root_cause = last_step.root_cause
         visual_finding = last_step.visual_evidence
+        spoken_context = None
 
         for s in reversed(steps):
             if s.culprit_file and not culprit_file:
@@ -191,6 +205,8 @@ Set "escalate_to": null.
                 root_cause = s.root_cause
             if s.visual_evidence and not visual_finding:
                 visual_finding = s.visual_evidence
+            if s.spoken_context and not spoken_context:
+                spoken_context = s.spoken_context
 
         correlated_diff = None
         if culprit_file:
@@ -223,6 +239,7 @@ Set "escalate_to": null.
             root_cause=root_cause or "Automated telemetry diagnosis completed.",
             correlated_diff=correlated_diff,
             visual_finding=visual_finding,
+            spoken_context=spoken_context,
             proposed_remediation=proposed_rem or "",
             confidence=max(s.confidence for s in steps) if steps else 0.90,
             patch_file_path=patch_file,

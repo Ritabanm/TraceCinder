@@ -73,12 +73,25 @@ class MuseEmberProvider:
         with open(image_path, "rb") as f:
             return base64.b64encode(f.read()).decode("utf-8"), mime
 
+    def _encode_audio_b64(self, audio_path: str) -> Tuple[Optional[str], str]:
+        if audio_path.startswith("data:audio/"):
+            header, data = audio_path.split(",", 1)
+            fmt = "mp3" if "mp3" in header else "wav"
+            return data, fmt
+        if not os.path.exists(audio_path):
+            return None, "wav"
+        ext = os.path.splitext(audio_path)[1].lower().lstrip(".")
+        fmt = "mp3" if ext == "mp3" else "wav"
+        with open(audio_path, "rb") as f:
+            return base64.b64encode(f.read()).decode("utf-8"), fmt
+
     def execute_tier(
         self,
         tier: EscalationTier,
         prompt_context: str,
         budget_ledger: BudgetLedger,
         image_path: Optional[str] = None,
+        audio_path: Optional[str] = None,
         incident_id: str = "unknown",
     ) -> TriageStepResult:
         static_sys, dynamic_user = format_cache_friendly_prompt(prompt_context)
@@ -93,11 +106,11 @@ class MuseEmberProvider:
 
         if self.mock_mode:
             return self._mock_tier_response(
-                tier, dynamic_user, budget_ledger, estimated_prompt_tokens, estimated_cached_tokens, incident_id
+                tier, dynamic_user, budget_ledger, estimated_prompt_tokens, estimated_cached_tokens, incident_id, audio_path
             )
 
         return self._call_meta_api(
-            tier, static_sys, dynamic_user, image_path, budget_ledger, incident_id
+            tier, static_sys, dynamic_user, image_path, audio_path, budget_ledger, incident_id
         )
 
     def _extract_dynamic_signatures(self, context: str) -> Dict[str, str]:
@@ -129,10 +142,15 @@ class MuseEmberProvider:
         prompt_tokens: int,
         cached_tokens: int,
         incident_id: str = "unknown",
+        audio_path: Optional[str] = None,
     ) -> TriageStepResult:
         """Deterministic simulation for local offline preview and testing."""
         completion_tokens = 320
         sig = self._extract_dynamic_signatures(context)
+        spoken_ctx = (
+            "Engineer voice note confirmed: user checkout triggers 500 when avatar URL is unhandled None."
+            if audio_path else None
+        )
 
         if tier == EscalationTier.PULSE:
             usage = budget_ledger.record_usage(
@@ -239,6 +257,7 @@ class MuseEmberProvider:
                     culprit_file="src/client/token_interceptor.ts",
                     culprit_line_range="L27-L29",
                     visual_evidence="Screenshot confirms user locked out with Cloudflare '429 Too Many Requests' badge citing 10 unthrottled requests in 120ms.",
+                    spoken_context=spoken_ctx,
                     root_cause="Frontend interceptor removed exponential jitter backoff, turning a transient 401 into an unthrottled retry storm that tripped WAF rate-limiting.",
                     proposed_remediation=(
                         "```typescript\n"
@@ -260,6 +279,7 @@ class MuseEmberProvider:
                     culprit_file=sig["file"],
                     culprit_line_range=sig["line"],
                     visual_evidence=f"Uploaded artifact visually confirms failing client error state matching {sig['err_name']}.",
+                    spoken_context=spoken_ctx,
                     root_cause=f"Runtime {sig['err_name']} in {sig['file']} causes failure to complete request: '{sig['err_msg']}'.",
                     proposed_remediation=(
                         f"```python\n"
@@ -279,6 +299,7 @@ class MuseEmberProvider:
                 culprit_file="src/services/user_serializer.py",
                 culprit_line_range="L44-L46",
                 visual_evidence="Screenshot shows persistent spinning modal on Checkout button with red toast: 'Payment Failed: Internal Server Error'.",
+                spoken_context=spoken_ctx or "Engineer note confirmed: checkout modal hangs indefinitely for guest users due to unhandled None avatar.",
                 root_cause="Frontend checkout action is blocked waiting on /v1/user/profile response, which crashes with 500 due to unhandled None avatar in commit a8f41bc.",
                 proposed_remediation=(
                     "```python\n"
@@ -305,6 +326,7 @@ class MuseEmberProvider:
         system_prompt: str,
         user_prompt: str,
         image_path: Optional[str],
+        audio_path: Optional[str],
         budget_ledger: BudgetLedger,
         incident_id: str = "unknown",
     ) -> TriageStepResult:
@@ -312,17 +334,27 @@ class MuseEmberProvider:
             {"role": "system", "content": system_prompt},
         ]
 
-        user_content: Any = user_prompt
+        content_items: List[Dict[str, Any]] = []
         if image_path and os.path.exists(image_path):
             b64_img, mime = self._encode_image_b64(image_path)
             if b64_img:
-                user_content = [
-                    {"type": "text", "text": user_prompt},
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:{mime};base64,{b64_img}"},
-                    },
-                ]
+                content_items.append({
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{mime};base64,{b64_img}"},
+                })
+
+        if audio_path and (os.path.exists(audio_path) or audio_path.startswith("data:")):
+            b64_audio, audio_fmt = self._encode_audio_b64(audio_path)
+            if b64_audio:
+                content_items.append({
+                    "type": "input_audio",
+                    "input_audio": {"data": b64_audio, "format": audio_fmt},
+                })
+
+        if content_items:
+            user_content: Any = [{"type": "text", "text": user_prompt}] + content_items
+        else:
+            user_content = user_prompt
 
         messages.append({"role": "user", "content": user_content})
 
@@ -344,7 +376,7 @@ class MuseEmberProvider:
             method="POST",
         )
 
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        with urllib.request.urlopen(req, timeout=120) as resp:
             data = json.loads(resp.read().decode("utf-8"))
 
         usage_data = data.get("usage", {})
@@ -411,6 +443,7 @@ class MuseEmberProvider:
             culprit_file=parsed.get("culprit_file"),
             culprit_line_range=parsed.get("culprit_line_range"),
             visual_evidence=parsed.get("visual_evidence"),
+            spoken_context=parsed.get("spoken_context"),
             root_cause=parsed.get("root_cause", ""),
             proposed_remediation=parsed.get("proposed_remediation", ""),
             confidence=float(parsed.get("confidence", 0.92)),

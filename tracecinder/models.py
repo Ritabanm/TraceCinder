@@ -26,6 +26,7 @@ class IncidentBundle:
     log_path: str
     diff_path: Optional[str] = None
     screenshot_path: Optional[str] = None
+    audio_path: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -49,6 +50,7 @@ class TriageStepResult:
     culprit_file: Optional[str] = None
     culprit_line_range: Optional[str] = None
     visual_evidence: Optional[str] = None
+    spoken_context: Optional[str] = None
     root_cause: str = ""
     proposed_remediation: str = ""
     confidence: float = 0.0
@@ -66,6 +68,7 @@ class IncidentReport:
     root_cause: str
     correlated_diff: Optional[Dict[str, str]] = None
     visual_finding: Optional[str] = None
+    spoken_context: Optional[str] = None
     proposed_remediation: str = ""
     confidence: float = 0.0
     patch_file_path: Optional[str] = None

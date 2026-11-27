@@ -5,5 +5,6 @@
   "timestamp": "2026-11-24T19:42:10Z",
   "log_file": "telemetry.log",
   "diff_file": "recent.patch",
-  "screenshot_file": "failure_screen.svg"
+  "screenshot_file": "failure_screen.svg",
+  "audio_file": "incident_note.wav"
 }

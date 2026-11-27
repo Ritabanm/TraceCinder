@@ -191,7 +191,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               <span>🖼</span>
               <span id="label-screen" class="truncate">failure_screen.svg</span>
             </div>
-            <span class="text-pink-400 text-[10px] whitespace-nowrap">UI Visual Artifact</span>
+            <span class="text-pink-400 text-[10px] whitespace-nowrap">DevTools Capture</span>
+          </div>
+          <div id="row-audio-asset" class="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/70 border border-slate-800">
+            <div class="flex items-center gap-2 text-slate-300 truncate">
+              <span>🎙</span>
+              <span id="label-audio" class="truncate">incident_note.wav</span>
+            </div>
+            <span id="badge-audio-fmt" class="text-cyan-400 text-[10px] whitespace-nowrap">audio/ember-native</span>
           </div>
         </div>
       </div>
@@ -304,6 +311,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           </div>
         </div>
 
+        <!-- Multimodal Voice Note Alignment Display -->
+        <div id="rca-voice-container" class="glass-card rounded-xl p-4 mb-5 border-l-4 border-l-cyan-400">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-[11px] uppercase tracking-wider font-semibold text-slate-400 flex items-center gap-1.5">
+              <span>🎙</span> Engineer Voice Context Alignment
+            </div>
+            <span class="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800/60 px-2 py-0.5 rounded">Native Audio Ingested</span>
+          </div>
+          <p class="text-xs text-cyan-200 font-mono leading-relaxed bg-cyan-950/30 p-3 rounded-lg border border-cyan-900/40" id="rca-voice-text">-</p>
+        </div>
+
         <!-- Proposed Code Remediation Patch with Clean Diff Lines -->
         <div class="glass-card rounded-xl p-4">
           <div class="flex items-center justify-between mb-2">
@@ -379,6 +397,101 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           </div>
         </div>
 
+        <!-- Native Voice Bug Description (Push-to-Talk & File Drop) -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-slate-400 font-medium uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+              <span>🎙</span> Native Voice Bug Description (<span class="text-cyan-400">muse-ember-1.0 Audio Input</span>)
+            </label>
+            <button type="button" onclick="loadSampleVoiceClip()" class="text-[10px] text-amber-400 hover:text-amber-300 font-mono hover:underline flex items-center gap-1">
+              <span>⚡</span> Use Pre-Bundled Voice Note (incident_note.wav)
+            </button>
+          </div>
+
+          <div class="border border-slate-800 rounded-xl p-3 bg-slate-950/70 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-3 w-full sm:w-auto">
+              <button id="btn-record-audio" type="button" onclick="toggleVoiceRecording()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-rose-300 flex items-center gap-2 transition active:scale-95 shadow">
+                <span id="record-dot" class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                <span id="record-text">Push to Talk (Max 20s)</span>
+              </button>
+              
+              <div id="record-status" class="text-[11px] font-mono text-slate-400">
+                <span id="record-time">00:00</span> / 00:20
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <label class="text-[10px] text-cyan-400 hover:underline cursor-pointer font-mono px-2 py-1 rounded bg-slate-900 border border-slate-800">
+                <span>Drop/Browse .wav/.mp3/.webm</span>
+                <input id="custom-audio-input" type="file" accept="audio/wav,audio/mp3,audio/webm,audio/mpeg,audio/x-wav" class="hidden" onchange="handleAudioFileSelect(event)"/>
+              </label>
+            </div>
+          </div>
+
+          <!-- Recorded / Attached Audio Pill -->
+          <div id="voice-preview" class="hidden mt-2 flex items-center justify-between p-2.5 rounded-lg bg-cyan-950/40 border border-cyan-800/60 font-mono text-xs">
+            <div class="flex items-center gap-2 truncate">
+              <span class="text-cyan-400 font-bold">▶</span>
+              <span id="voice-preview-name" class="text-slate-200 truncate font-semibold">voice_context.webm</span>
+              <span id="voice-preview-meta" class="text-[10px] text-cyan-300">audio/ember-native • Ready</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <audio id="voice-audio-player" class="hidden"></audio>
+              <button type="button" onclick="playVoicePreview()" class="text-[10px] px-2 py-1 rounded bg-cyan-900/60 border border-cyan-700 text-cyan-200 hover:bg-cyan-800">Play</button>
+              <button type="button" onclick="clearVoiceRecording()" class="text-[10px] px-2 py-1 rounded bg-slate-800 text-slate-400 hover:text-rose-400">Remove</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Push-to-Talk Voice Bug Description -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-slate-400 font-medium uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+              <span>🎙</span> Native Voice Bug Description (<span class="text-cyan-400">muse-ember-1.0 Audio Input</span>)
+            </label>
+            <button type="button" onclick="loadSampleVoiceClip()" class="text-[10px] text-amber-400 hover:text-amber-300 font-mono hover:underline flex items-center gap-1">
+              <span>⚡</span> Use Pre-Bundled Voice Note (incident_note.wav)
+            </button>
+          </div>
+
+          <div class="border border-slate-800 rounded-xl p-3 bg-slate-950/70 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-3 w-full sm:w-auto">
+              <!-- Push to Talk Button -->
+              <button id="btn-record-audio" type="button" onclick="toggleVoiceRecording()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-rose-300 flex items-center gap-2 transition active:scale-95 shadow">
+                <span id="record-dot" class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                <span id="record-text">Push to Talk (Max 20s)</span>
+              </button>
+              
+              <!-- Timer / Recording status -->
+              <div id="record-status" class="text-[11px] font-mono text-slate-400">
+                <span id="record-time">00:00</span> / 00:20
+              </div>
+            </div>
+
+            <!-- Audio File Drop / Browse -->
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <label class="text-[10px] text-cyan-400 hover:underline cursor-pointer font-mono px-2 py-1 rounded bg-slate-900 border border-slate-800">
+                <span>Drop/Browse .wav/.mp3/.webm</span>
+                <input id="custom-audio-input" type="file" accept="audio/wav,audio/mp3,audio/webm,audio/mpeg,audio/x-wav" class="hidden" onchange="handleAudioFileSelect(event)"/>
+              </label>
+            </div>
+          </div>
+
+          <!-- Recorded / Attached Audio Pill -->
+          <div id="voice-preview" class="hidden mt-2 flex items-center justify-between p-2.5 rounded-lg bg-cyan-950/40 border border-cyan-800/60 font-mono text-xs">
+            <div class="flex items-center gap-2 truncate">
+              <span class="text-cyan-400">🎙</span>
+              <span id="voice-preview-name" class="text-slate-200 truncate font-semibold">voice_context.webm</span>
+              <span id="voice-preview-meta" class="text-[10px] text-cyan-300">audio/ember-native • Ready</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <audio id="voice-audio-player" class="hidden"></audio>
+              <button type="button" onclick="playVoicePreview()" class="text-[10px] px-2 py-0.5 rounded bg-cyan-900/60 border border-cyan-700 text-cyan-200 hover:bg-cyan-800">Play</button>
+              <button type="button" onclick="clearVoiceRecording(event)" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 hover:text-rose-400">Remove</button>
+            </div>
+          </div>
+        </div>
+
         <!-- Raw Execution Logs -->
         <div>
           <div class="flex items-center justify-between mb-1">
@@ -440,6 +553,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     let currentIncident = "sample_checkout_break";
     let latestPatchText = "";
     let customImageBase64 = null;
+    let customAudioBase64 = null;
+    let customAudioName = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let recordTimerInterval = null;
+    let recordSeconds = 0;
     let customIncidentsMap = {};
 
     function escapeHtml(text) {
@@ -489,6 +608,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         document.getElementById('label-log').textContent = 'custom_telemetry.log';
         document.getElementById('label-diff').textContent = custom.diff ? 'custom_diff.patch' : '(none provided)';
         document.getElementById('label-screen').textContent = custom.has_screenshot ? 'custom_screenshot.png' : '(none)';
+        document.getElementById('label-audio').textContent = custom.has_audio ? (custom.audio_name || 'voice_context.webm') : '(none attached)';
+        document.getElementById('badge-audio-fmt').textContent = custom.has_audio ? 'audio/ember-native' : 'none';
         if (custom.screenshot_b64) {
           document.getElementById('rca-image').src = custom.screenshot_b64;
           document.getElementById('rca-visual-container').classList.remove('hidden');
@@ -499,6 +620,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         document.getElementById('label-log').textContent = 'telemetry.log';
         document.getElementById('label-diff').textContent = 'recent.patch';
         document.getElementById('label-screen').textContent = 'failure_screen.svg';
+        if (incId === 'sample_checkout_break') {
+          document.getElementById('label-audio').textContent = 'incident_note.wav';
+          document.getElementById('badge-audio-fmt').textContent = 'audio/ember-native';
+        } else {
+          document.getElementById('label-audio').textContent = '(none attached)';
+          document.getElementById('badge-audio-fmt').textContent = 'none';
+        }
         document.getElementById('rca-image').src = '/screenshot?id=' + incId;
         document.getElementById('rca-visual-container').classList.remove('hidden');
       }
@@ -587,6 +715,216 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById('dropzone-preview').classList.add('hidden');
     }
 
+    async function toggleVoiceRecording() {
+      const btn = document.getElementById('btn-record-audio');
+      const text = document.getElementById('record-text');
+      const dot = document.getElementById('record-dot');
+
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        return;
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Microphone recording is not supported on this browser context. You can use 'Use Pre-Bundled Voice Note' or upload an audio file directly!");
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) audioChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          clearInterval(recordTimerInterval);
+          recordSeconds = 0;
+          document.getElementById('record-time').textContent = '00:00';
+          btn.classList.remove('bg-rose-900/80', 'border-rose-500');
+          dot.classList.remove('animate-ping');
+          text.textContent = 'Push to Talk (Max 20s)';
+          stream.getTracks().forEach(t => t.stop());
+
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            customAudioBase64 = evt.target.result;
+            customAudioName = 'voice_context.webm';
+            showVoicePreview('voice_context.webm', `${(audioBlob.size / 1024).toFixed(1)} KB (audio/ember-native)`);
+          };
+          reader.readAsDataURL(audioBlob);
+        };
+
+        mediaRecorder.start();
+        recordSeconds = 0;
+        btn.classList.add('bg-rose-900/80', 'border-rose-500');
+        dot.classList.add('animate-ping');
+        text.textContent = 'Recording... Click to Stop';
+
+        recordTimerInterval = setInterval(() => {
+          recordSeconds++;
+          const mins = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
+          const secs = String(recordSeconds % 60).padStart(2, '0');
+          document.getElementById('record-time').textContent = `${mins}:${secs}`;
+          if (recordSeconds >= 20) {
+            mediaRecorder.stop();
+          }
+        }, 1000);
+
+      } catch (err) {
+        alert("Microphone access could not be initialized: " + err.message + "\nYou can use 'Use Pre-Bundled Voice Note' or upload an audio file directly.");
+      }
+    }
+
+    function handleAudioFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        customAudioBase64 = evt.target.result;
+        customAudioName = file.name;
+        showVoicePreview(file.name, `${(file.size / 1024).toFixed(1)} KB (audio/ember-native)`);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function loadSampleVoiceClip() {
+      customAudioBase64 = "sample";
+      customAudioName = "incident_note.wav";
+      showVoicePreview("incident_note.wav", "172.3 KB • Pre-bundled sample");
+    }
+
+    function showVoicePreview(name, meta) {
+      document.getElementById('voice-preview').classList.remove('hidden');
+      document.getElementById('voice-preview-name').textContent = name;
+      document.getElementById('voice-preview-meta').textContent = meta;
+    }
+
+    function clearVoiceRecording() {
+      customAudioBase64 = null;
+      customAudioName = null;
+      document.getElementById('voice-preview').classList.add('hidden');
+      document.getElementById('custom-audio-input').value = "";
+    }
+
+    function playVoicePreview() {
+      const audio = document.getElementById('voice-audio-player');
+      if (customAudioBase64 && customAudioBase64 !== "sample") {
+        audio.src = customAudioBase64;
+      } else {
+        audio.src = "/audio?id=sample_checkout_break";
+      }
+      audio.play();
+    }
+
+    async function toggleVoiceRecording() {
+      const btn = document.getElementById('btn-record-audio');
+      const text = document.getElementById('record-text');
+      const dot = document.getElementById('record-dot');
+
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        return;
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Microphone recording is not supported on this browser context. You can use 'Use Pre-Bundled Voice Note' or upload an audio file directly!");
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) audioChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          clearInterval(recordTimerInterval);
+          recordSeconds = 0;
+          document.getElementById('record-time').textContent = '00:00';
+          btn.classList.remove('bg-rose-900/80', 'border-rose-500');
+          dot.classList.remove('animate-ping');
+          text.textContent = 'Push to Talk (Max 20s)';
+          stream.getTracks().forEach(t => t.stop());
+
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            customAudioBase64 = evt.target.result;
+            customAudioName = 'voice_context.webm';
+            showVoicePreview('voice_context.webm', `${(audioBlob.size / 1024).toFixed(1)} KB (audio/ember-native)`);
+          };
+          reader.readAsDataURL(audioBlob);
+        };
+
+        mediaRecorder.start();
+        recordSeconds = 0;
+        btn.classList.add('bg-rose-900/80', 'border-rose-500');
+        dot.classList.add('animate-ping');
+        text.textContent = 'Recording... Click to Stop';
+
+        recordTimerInterval = setInterval(() => {
+          recordSeconds++;
+          const mins = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
+          const secs = String(recordSeconds % 60).padStart(2, '0');
+          document.getElementById('record-time').textContent = `${mins}:${secs}`;
+          if (recordSeconds >= 20) {
+            mediaRecorder.stop();
+          }
+        }, 1000);
+
+      } catch (err) {
+        alert("Microphone access could not be initialized: " + err.message + "\nYou can use 'Use Pre-Bundled Voice Note' or upload an audio file directly.");
+      }
+    }
+
+    function handleAudioFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        customAudioBase64 = evt.target.result;
+        customAudioName = file.name;
+        showVoicePreview(file.name, `${(file.size / 1024).toFixed(1)} KB (audio/ember-native)`);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function loadSampleVoiceClip() {
+      customAudioBase64 = "sample";
+      customAudioName = "incident_note.wav";
+      showVoicePreview("incident_note.wav", "172.3 KB • Pre-bundled sample");
+    }
+
+    function showVoicePreview(name, meta) {
+      document.getElementById('voice-preview').classList.remove('hidden');
+      document.getElementById('voice-preview-name').textContent = name;
+      document.getElementById('voice-preview-meta').textContent = meta;
+    }
+
+    function clearVoiceRecording() {
+      customAudioBase64 = null;
+      customAudioName = null;
+      document.getElementById('voice-preview').classList.add('hidden');
+      document.getElementById('custom-audio-input').value = "";
+    }
+
+    function playVoicePreview() {
+      const audio = document.getElementById('voice-audio-player');
+      if (customAudioBase64 && customAudioBase64 !== "sample") {
+        audio.src = customAudioBase64;
+      } else {
+        audio.src = "/audio?id=sample_checkout_break";
+      }
+      audio.play();
+    }
+
     // Global Paste Listener for Screenshots (Cmd+V / Ctrl+V)
     window.addEventListener('paste', (e) => {
       const items = (e.clipboardData || e.originalEvent.clipboardData).items;
@@ -646,7 +984,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           summary: summary,
           log_text: logs,
           diff_text: diff,
-          screenshot_b64: customImageBase64
+          screenshot_b64: customImageBase64,
+          audio_b64: (customAudioBase64 === "sample") ? null : customAudioBase64,
+          audio_sample: (customAudioBase64 === "sample")
         };
 
         const res = await fetch('/api/triage', {
@@ -665,7 +1005,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           logs: logs,
           diff: diff,
           screenshot_b64: customImageBase64,
-          has_screenshot: !!customImageBase64
+          has_screenshot: !!customImageBase64,
+          has_audio: !!customAudioBase64,
+          audio_name: customAudioName || "voice_context.webm",
         };
 
         // Append to incident list UI
@@ -799,6 +1141,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         }
       }
 
+      const voiceContainer = document.getElementById('rca-voice-container');
+      if (voiceContainer) {
+        if (report.spoken_context && report.spoken_context.trim()) {
+          voiceContainer.classList.remove('hidden');
+          document.getElementById('rca-voice-text').textContent = report.spoken_context;
+        } else {
+          voiceContainer.classList.add('hidden');
+        }
+      }
+
       // Render clean color-coded diff
       document.getElementById('rca-patch-container').innerHTML = renderColorCodedDiff(report.proposed_remediation);
     }
@@ -887,6 +1239,24 @@ class TraceCinderHTTPHandler(BaseHTTPRequestHandler):
                 self.send_response(404)
                 self.end_headers()
 
+        elif parsed.path == "/audio":
+            inc_id = query.get("id", ["sample_checkout_break"])[0]
+            inc_dir = self.incidents_base_dir / inc_id
+            target = inc_dir / "incident_note.wav"
+            if not target.exists():
+                target = inc_dir / "voice_context.webm"
+            if not target.exists():
+                target = inc_dir / "voice_context.wav"
+            if target.exists():
+                mime, _ = mimetypes.guess_type(str(target))
+                self.send_response(200)
+                self.send_header("Content-Type", mime or "audio/wav")
+                self.end_headers()
+                self.wfile.write(target.read_bytes())
+            else:
+                self.send_response(404)
+                self.end_headers()
+
         elif parsed.path == "/api/raw_log":
             inc_id = query.get("id", ["sample_checkout_break"])[0]
             log_file = self.incidents_base_dir / inc_id / "telemetry.log"
@@ -944,6 +1314,25 @@ class TraceCinderHTTPHandler(BaseHTTPRequestHandler):
                     except Exception:
                         pass
 
+                audio_path = None
+                if post_body.get("audio_b64"):
+                    ab64 = post_body["audio_b64"]
+                    ext = ".wav" if "wav" in ab64[:30] else ".webm"
+                    ap = custom_dir / f"voice_context{ext}"
+                    if "," in ab64:
+                        ab64 = ab64.split(",", 1)[-1]
+                    try:
+                        ap.write_bytes(base64.b64decode(ab64))
+                        audio_path = str(ap)
+                    except Exception:
+                        pass
+                elif post_body.get("audio_sample") or post_body.get("use_sample_audio"):
+                    sample_wav = self.incidents_base_dir / "sample_checkout_break" / "incident_note.wav"
+                    if sample_wav.exists():
+                        ap = custom_dir / "incident_note.wav"
+                        ap.write_bytes(sample_wav.read_bytes())
+                        audio_path = str(ap)
+
                 meta = {
                     "incident_id": customId if (customId := custom_id) else "CUSTOM",
                     "service": post_body.get("service", "custom-service"),
@@ -952,6 +1341,7 @@ class TraceCinderHTTPHandler(BaseHTTPRequestHandler):
                     "log_file": "telemetry.log",
                     "diff_file": "recent.patch" if diff_path else None,
                     "screenshot_file": "failure_screen.png" if screenshot_path else None,
+                    "audio_file": Path(audio_path).name if audio_path else None,
                 }
                 (custom_dir / "incident.json").write_text(json.dumps(meta, indent=2))
 
@@ -963,6 +1353,7 @@ class TraceCinderHTTPHandler(BaseHTTPRequestHandler):
                     log_path=str(log_path),
                     diff_path=diff_path,
                     screenshot_path=screenshot_path,
+                    audio_path=audio_path,
                     metadata=meta,
                 )
             else:
@@ -992,6 +1383,7 @@ class TraceCinderHTTPHandler(BaseHTTPRequestHandler):
                 "root_cause": report.root_cause,
                 "correlated_diff": report.correlated_diff,
                 "visual_finding": report.visual_finding,
+                "spoken_context": report.spoken_context,
                 "proposed_remediation": report.proposed_remediation,
                 "confidence": report.confidence,
                 "total_usage": {

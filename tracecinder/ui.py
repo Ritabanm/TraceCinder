@@ -66,6 +66,8 @@ def render_step_progress(step: TriageStepResult, index: int) -> None:
         print(f"  {DIM}Correlated Code:{RESET} {CYAN}{step.culprit_file}{RESET} {YELLOW}({step.culprit_line_range}){RESET}")
     if step.visual_evidence:
         print(f"  {DIM}Visual Analysis:{RESET} {MAGENTA}{step.visual_evidence}{RESET}")
+    if step.spoken_context:
+        print(f"  {DIM}Voice Note Context:{RESET} {CYAN}🎙 {step.spoken_context}{RESET}")
     if step.escalate_to:
         print(f"  {YELLOW}⚡ Escalation Triggered:{RESET} Advancing to {BOLD}{step.escalate_to.value}{RESET}")
 
@@ -90,6 +92,10 @@ def render_final_report(report: IncidentReport) -> None:
     if report.visual_finding:
         print(f"\n{BOLD}🖼  MULTIMODAL UI CORRELATION:{RESET}")
         print(f"  {report.visual_finding}")
+
+    if report.spoken_context:
+        print(f"\n{BOLD}🎙  ENGINEER VOICE CONTEXT ALIGNMENT:{RESET}")
+        print(f"  {CYAN}{report.spoken_context}{RESET}")
 
     if report.proposed_remediation:
         print(f"\n{BOLD}🛠  PROPOSED CODE REMEDIATION:{RESET}")

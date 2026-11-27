@@ -22,6 +22,9 @@ def load_incident_from_dir(incident_dir: Path) -> IncidentBundle:
     log_path = str(incident_dir / meta.get("log_file", "telemetry.log"))
     diff_path = str(incident_dir / meta.get("diff_file", "recent.patch")) if meta.get("diff_file") else None
     screenshot_path = str(incident_dir / meta.get("screenshot_file", "failure_screen.png")) if meta.get("screenshot_file") else None
+    audio_path = str(incident_dir / meta.get("audio_file", "incident_note.wav")) if meta.get("audio_file") else None
+    if audio_path and not Path(audio_path).exists():
+        audio_path = None
 
     return IncidentBundle(
         incident_id=meta.get("incident_id", incident_dir.name),
@@ -31,6 +34,7 @@ def load_incident_from_dir(incident_dir: Path) -> IncidentBundle:
         log_path=log_path,
         diff_path=diff_path,
         screenshot_path=screenshot_path,
+        audio_path=audio_path,
         metadata=meta,
     )
 
@@ -53,6 +57,7 @@ def cmd_triage(args: argparse.Namespace) -> None:
             sys.exit(1)
         diff_path = str(Path(args.diff)) if getattr(args, "diff", None) and Path(args.diff).exists() else None
         screen_path = str(Path(args.screen)) if getattr(args, "screen", None) and Path(args.screen).exists() else None
+        audio_path = str(Path(args.audio)) if getattr(args, "audio", None) and Path(args.audio).exists() else None
         
         bundle = IncidentBundle(
             incident_id=f"CLI-{log_path.stem}",
@@ -62,6 +67,7 @@ def cmd_triage(args: argparse.Namespace) -> None:
             log_path=str(log_path),
             diff_path=diff_path,
             screenshot_path=screen_path,
+            audio_path=audio_path,
         )
     else:
         incident_path = Path(args.incident_path) if getattr(args, "incident_path", None) else Path("incidents/sample_checkout_break")
@@ -69,6 +75,8 @@ def cmd_triage(args: argparse.Namespace) -> None:
             print(f"Error: Incident path {incident_path} not found.")
             sys.exit(1)
         bundle = load_incident_from_dir(incident_path)
+        if getattr(args, "audio", None) and Path(args.audio).exists():
+            bundle.audio_path = str(Path(args.audio))
 
     print(f"\n⚡ Ingesting Incident Bundle: {bundle.incident_id} [{bundle.service}]")
     print(f"   Log stream: {bundle.log_path}")
@@ -76,6 +84,8 @@ def cmd_triage(args: argparse.Namespace) -> None:
         print(f"   Git diff:   {bundle.diff_path}")
     if bundle.screenshot_path:
         print(f"   Visual UI:  {bundle.screenshot_path}")
+    if bundle.audio_path:
+        print(f"   Voice Note: {bundle.audio_path} (audio/ember-native)")
 
     provider = MuseEmberProvider(mock_mode=args.mock)
     mode_label = "Local Offline Simulator (--mock)" if provider.mock_mode else "Live Meta Model API (muse-ember-1.0)"
@@ -100,6 +110,7 @@ def cmd_triage(args: argparse.Namespace) -> None:
         "root_cause": report.root_cause,
         "correlated_diff": report.correlated_diff,
         "visual_finding": report.visual_finding,
+        "spoken_context": report.spoken_context,
         "proposed_remediation": report.proposed_remediation,
         "confidence": report.confidence,
         "patch_file_path": report.patch_file_path,
@@ -174,6 +185,7 @@ def main() -> None:
     triage_parser.add_argument("--logs", type=str, help="Path to raw telemetry log file")
     triage_parser.add_argument("--diff", type=str, help="Path to recent git commit diff / patch")
     triage_parser.add_argument("--screen", type=str, help="Path to UI failure screenshot / screen recording frame")
+    triage_parser.add_argument("--audio", type=str, help="Path to engineer voice note recording (.wav / .mp3 / .webm)")
     triage_parser.add_argument("--service", type=str, default="core-service", help="Target service name")
     triage_parser.add_argument("--verify", action="store_true", default=True, help="Run ast.parse and git apply check")
     triage_parser.add_argument("--mock", dest="mock", action="store_true", default=None, help="Run in local offline mock mode")
