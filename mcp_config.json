@@ -1,0 +1,118 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schema/mcp-config.json",
+  "description": "TraceCinder MCP Server Configuration for Antigravity, Cursor, VS Code, and Claude Code",
+  "mcpServers": {
+    "tracecinder": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "tracecinder.mcp_server",
+        "--workspace",
+        "."
+      ],
+      "env": {
+        "META_API_KEY": "${META_API_KEY}",
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    }
+  },
+  "client_examples": {
+    "antigravity": {
+      "config_path": "~/.gemini/antigravity/mcp_servers.json",
+      "config": {
+        "mcpServers": {
+          "tracecinder": {
+            "command": "python3",
+            "args": [
+              "-m",
+              "tracecinder.mcp_server",
+              "--workspace",
+              "${workspaceFolder}"
+            ],
+            "env": {
+              "META_API_KEY": "${env:META_API_KEY}"
+            }
+          }
+        }
+      }
+    },
+    "cursor": {
+      "config_path": ".cursor/mcp.json or ~/.cursor/mcp.json",
+      "config": {
+        "mcpServers": {
+          "tracecinder": {
+            "command": "python3",
+            "args": [
+              "-m",
+              "tracecinder.mcp_server",
+              "--workspace",
+              "${workspaceFolder}"
+            ]
+          }
+        }
+      }
+    },
+    "claude_code": {
+      "config_path": "~/.claude/mcp.json",
+      "cli_command": "claude mcp add tracecinder python3 -- -m tracecinder.mcp_server",
+      "config": {
+        "mcpServers": {
+          "tracecinder": {
+            "command": "python3",
+            "args": [
+              "-m",
+              "tracecinder.mcp_server"
+            ]
+          }
+        }
+      }
+    },
+    "vscode": {
+      "config_path": ".vscode/mcp.json",
+      "config": {
+        "servers": {
+          "tracecinder": {
+            "type": "stdio",
+            "command": "python3",
+            "args": [
+              "-m",
+              "tracecinder.mcp_server",
+              "--workspace",
+              "${workspaceFolder}"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "capabilities": {
+    "resources": [
+      {
+        "uri": "git://working-tree/diff",
+        "description": "Read-only current unstaged/staged git diffs and recent commit history"
+      },
+      {
+        "uri": "ide://active-context",
+        "description": "Active file paths, linter/compiler errors, and developer task intent"
+      },
+      {
+        "uri": "tracecinder://telemetry/budget",
+        "description": "Real-time token consumption and USD spend against 200,000-token ceiling"
+      }
+    ],
+    "tools": [
+      {
+        "name": "analyze_incident",
+        "description": "Runs bounded 3-tier forensic pipeline (Pulse -> Diff -> Multimodal) on runtime stack traces & diffs"
+      },
+      {
+        "name": "propose_fix_diff",
+        "description": "Generates verified draft unified diff for human review (read-only, never auto-applies)"
+      },
+      {
+        "name": "get_forensic_telemetry",
+        "description": "Returns exact token usage, latency, and cost vs 200,000-token ceiling"
+      }
+    ]
+  }
+}

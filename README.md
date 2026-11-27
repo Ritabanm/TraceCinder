@@ -116,3 +116,50 @@ python main.py budget
 | **Total Incident Remediation** | **1,736** | **657 (37.8%)** | **860** | **$0.00047** |
 
 > At **\$0.00047 per incident remediation**, TraceCinder is **28x cheaper vs. a \$0.0132 naive max-effort baseline**, yielding over **21,000 verified remediation cycles** under the **\$10.00 Meta API Credit Cap**.
+
+---
+
+## 🔌 Model Context Protocol (MCP) Server (`tracecinder-mcp`)
+
+TraceCinder implements a standard JSON-RPC 2.0 stdio MCP server for inline IDE integration (Antigravity, Cursor, Claude Code, VS Code). It allows AI agents to directly query local forensic signals, investigate stack traces against recent git diffs, and generate verified draft patches under a strict 200,000-token budget ceiling.
+
+### Available MCP Resources
+- `git://working-tree/diff`: Current unstaged/staged git changes and recent commit history with token-bounded hunk pruning.
+- `ide://active-context`: Active editor file paths, open linter/compiler diagnostics, and developer's current task intent (`.tracecinder/active_context.json`).
+- `tracecinder://telemetry/budget`: Real-time session token consumption, prefix cache savings, and cost tracking against the hard 200,000-token ceiling.
+
+### Available MCP Tools
+- `analyze_incident`: Correlates error logs/stack traces, voice notes, and UI screenshot paths against the active git working tree and developer intent using the bounded 3-tier pipeline (`Pulse` → `Diff` → `Multimodal`).
+- `propose_fix_diff`: Generates a minimal unified diff (`git diff` format) targeting the isolated root cause, accompanied by `ast.parse` syntax verification, explanation, and confidence score. **Enforces human-in-the-loop review (never auto-applies or commits).**
+- `get_forensic_telemetry`: Returns exact input/output tokens, prefix cache hits, latency, and estimated cost for the current session.
+
+### Running the MCP Server
+```bash
+# Direct binary
+./cinder-mcp
+
+# Or via TraceCinder CLI
+cinder mcp
+
+# Or via Python module
+python -m tracecinder.mcp_server
+```
+
+### IDE Configuration (`mcp_config.json`)
+Connect TraceCinder to your IDE by referencing `mcp_config.json`:
+- **Antigravity / Cursor:** Add to `~/.gemini/antigravity/mcp.json` or `.cursor/mcp.json`:
+  ```json
+  {
+    "mcpServers": {
+      "tracecinder": {
+        "command": "cinder-mcp",
+        "args": [],
+        "env": {
+          "METAVR_DEBUG": "0"
+        }
+      }
+    }
+  }
+  ```
+- **Claude Code:** Add to `claude_desktop_config.json` under `mcpServers`.
+- **Integration Tests:** Run `python3 -m unittest discover tests/ -v` to verify all 12 MCP test suites.

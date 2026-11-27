@@ -12,3 +12,4 @@ dependencies = []
 
 [project.scripts]
 cinder = "tracecinder.cli:main"
+cinder-mcp = "tracecinder.mcp_server:main"

@@ -94,7 +94,7 @@ def render_final_report(report: IncidentReport) -> None:
         print(f"  {report.visual_finding}")
 
     if report.spoken_context:
-        print(f"\n{BOLD}🎙  ENGINEER VOICE CONTEXT ALIGNMENT:{RESET}")
+        print(f"\n{BOLD}🎙  ENGINEER SPOKEN VOICE CONTEXT ALIGNMENT:{RESET}")
         print(f"  {CYAN}{report.spoken_context}{RESET}")
 
     if report.proposed_remediation:

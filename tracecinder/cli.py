@@ -198,6 +198,11 @@ def main() -> None:
     ui_parser = subparsers.add_parser("ui", help="Launch interactive web dashboard")
     ui_parser.add_argument("--port", type=int, default=8080, help="Port to bind dashboard (default: 8080)")
 
+    mcp_parser = subparsers.add_parser("mcp", help="Start TraceCinder MCP (Model Context Protocol) server over stdio")
+    mcp_parser.add_argument("--workspace", type=str, default=None, help="Root workspace directory")
+    mcp_parser.add_argument("--mock", dest="mock", action="store_true", default=None, help="Run in mock/offline mode")
+    mcp_parser.add_argument("--live", dest="mock", action="store_false", help="Run in live API mode")
+
     args = parser.parse_args()
     if getattr(args, "ui", False) or args.command == "ui":
         cmd_ui(args)
@@ -205,6 +210,9 @@ def main() -> None:
         cmd_triage(args)
     elif args.command == "budget":
         cmd_budget(args)
+    elif args.command == "mcp":
+        from tracecinder.mcp_server import main as mcp_main
+        mcp_main()
     elif args.command == "replay" or not args.command:
         cmd_replay(args)
 
