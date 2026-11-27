@@ -1,0 +1,5 @@
+--- a/src/services/user_serializer.py
++++ b/src/services/user_serializer.py
+@@ -1,1 +1,1 @@
+-val = request.data['payload']
++val = request.data.get('payload') or DEFAULT_FALLBACK

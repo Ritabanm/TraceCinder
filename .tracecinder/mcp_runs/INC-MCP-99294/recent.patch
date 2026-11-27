@@ -1,0 +1,10 @@
+(Clean working tree - no uncommitted changes)
+
+
+=== RECENT COMMIT LOG ===
+
+[9c58749d] Ritaban Mitra (2026-11-27 12:07:01 -0500): fix(ui): adapt all modal dialogs for high contrast in light mode
+
+[df4384e9] Ritaban Mitra (2026-11-27 12:01:51 -0500): feat(ui): refine dashboard layout, eliminate jargon, add Day/Night theme toggle, and balance columns
+
+[62669eab] Ritaban Mitra (2026-11-27 11:54:22 -0500): feat(ui): add IDE/Git MCP Server connector card and modal to dashboard
