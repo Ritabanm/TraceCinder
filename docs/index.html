@@ -1368,42 +1368,61 @@ TypeError: 'NoneType' object has no attribute 'strip'`
 
     function synthesizeIntelligentRemediation(service, summary, logs, diff, detectedFile, detectedLine, errName, errMsg) {
       const fullText = (summary + "\n" + logs + "\n" + diff).toLowerCase();
-      const ext = detectedFile.split('.').pop().toLowerCase();
+      const ext = (detectedFile.split('.').pop() || 'py').toLowerCase();
+      const isPython = ['py', 'pyw', 'pyi'].includes(ext);
+      const isJsTs = ['js', 'ts', 'jsx', 'tsx', 'mjs'].includes(ext);
+      const isCpp = ['cpp', 'cc', 'cxx', 'c', 'h', 'hpp', 'cu'].includes(ext);
+      const comment = isPython ? '#' : '//';
 
-      // 1. ML / Tensor / Shape Inference error (e.g. ml-explore/mlx)
-      if (fullText.includes('shape') || fullText.includes('primitive') || fullText.includes('compile') || fullText.includes('tensor') || fullText.includes('dim')) {
-        return `\`\`\`${ext}\n- // Offending implementation at ${detectedFile}:${detectedLine}\n- throw std::invalid_argument("${errMsg}");\n+ // Autonomous TraceCinder Remediation Guard: Handle dynamic/shapeless primitive\n+ if (primitive.is_dynamic() || inputs.empty()) {\n+     return infer_dynamic_shapes(primitive, inputs);\n+ }\n+ return deduce_output_shapes(primitive, inputs);\n\`\`\``;
+      // 1. PyTorch / Kernel Dispatch / NotImplementedError (e.g. pytorch/torchtitan aten::hash_tensor)
+      if (errName.includes('NotImplemented') || fullText.includes('could not run') || fullText.includes('sparsecpu') || fullText.includes('backend')) {
+        if (isPython) {
+          return `\`\`\`python\n- ${comment} Offending kernel invocation at ${detectedFile}:${detectedLine}\n- return torch.ops.aten.hash_tensor(tensor)\n+ ${comment} Autonomous TraceCinder Remediation Guard: Backend compatibility fallback\n+ if hasattr(tensor, 'is_sparse') and tensor.is_sparse:\n+     # Convert SparseCPU tensor to dense representation before hashing\n+     return torch.ops.aten.hash_tensor(tensor.to_dense())\n+ return torch.ops.aten.hash_tensor(tensor)\n\`\`\``;
+        }
       }
 
-      // 2. Python AttributeError (e.g. NoneType object has no attribute 'xyz')
+      // 2. ML / Tensor / Dynamic Shape Inference error
+      if (fullText.includes('shape') || fullText.includes('primitive') || fullText.includes('infer output shapes')) {
+        if (isCpp) {
+          return `\`\`\`cpp\n- // Offending implementation at ${detectedFile}:${detectedLine}\n- throw std::invalid_argument("${errMsg}");\n+ // Autonomous TraceCinder Remediation Guard: Handle dynamic/shapeless primitive\n+ if (primitive.is_dynamic() || inputs.empty()) {\n+     return infer_dynamic_shapes(primitive, inputs);\n+ }\n+ return deduce_output_shapes(primitive, inputs);\n\`\`\``;
+        } else {
+          return `\`\`\`python\n- # Offending tensor compilation at ${detectedFile}:${detectedLine}\n- return compile_primitive(primitive, inputs)\n+ # Autonomous TraceCinder Remediation Guard: Dynamic shape compilation fallback\n+ if hasattr(primitive, 'is_dynamic') and primitive.is_dynamic():\n+     return deduce_dynamic_shapes(primitive, inputs)\n+ return compile_primitive(primitive, inputs)\n\`\`\``;
+        }
+      }
+
+      // 3. Python AttributeError (e.g. NoneType object has no attribute 'avatar')
       if (errName.includes('Attribute') || fullText.includes('has no attribute') || fullText.includes('attributeerror')) {
         const attrMatch = (errMsg + " " + logs).match(/attribute\s+['"]?([a-zA-Z0-9_]+)['"]?/i);
         const attr = attrMatch ? attrMatch[1] : 'avatar';
         return `\`\`\`python\n- # Offending attribute access at ${detectedFile}:${detectedLine}\n- attr_val = user.${attr}\n+ # Autonomous TraceCinder Remediation Guard: Defensive attribute access\n+ attr_val = getattr(user, '${attr}', None) if user is not None else DEFAULT_SAFE_FALLBACK\n\`\`\``;
       }
 
-      // 3. KeyError / Map lookup missing
+      // 4. KeyError / Map lookup missing
       if (errName.includes('Key') || fullText.includes('keyerror')) {
         const keyMatch = (errMsg + " " + logs).match(/keyerror[:\s]+['"]?([a-zA-Z0-9_\-]+)['"]?/i);
         const key = keyMatch ? keyMatch[1] : 'token';
         return `\`\`\`python\n- # Offending dictionary lookup at ${detectedFile}:${detectedLine}\n- value = config['${key}']\n+ # Autonomous TraceCinder Remediation Guard: Safe key access with default\n+ value = config.get('${key}', DEFAULT_FALLBACK_VALUE)\n\`\`\``;
       }
 
-      // 4. TypeError / Null Pointer / Undefined dereference
+      // 5. TypeError / Null Pointer / Undefined dereference
       if (errName.includes('Type') || errName.includes('Null') || fullText.includes('null') || fullText.includes('undefined')) {
-        if (ext === 'ts' || ext === 'js' || ext === 'jsx' || ext === 'tsx') {
+        if (isJsTs) {
           return `\`\`\`typescript\n- // Offending property dereference at ${detectedFile}:${detectedLine}\n- const payload = response.data.item;\n+ // Autonomous TraceCinder Remediation Guard: Optional chaining\n+ const payload = response?.data?.item ?? DEFAULT_SAFE_FALLBACK;\n\`\`\``;
         } else {
           return `\`\`\`python\n- # Offending operation at ${detectedFile}:${detectedLine}\n- return transform_entity(entity)\n+ # Autonomous TraceCinder Remediation Guard: Null check & defensive validation\n+ if entity is None:\n+     logger.warning("Encountered null entity; returning safe fallback")\n+     return DEFAULT_EMPTY_STATE\n+ return transform_entity(entity)\n\`\`\``;
         }
       }
 
-      // 5. IndexError / Out of bounds
+      // 6. IndexError / Out of bounds
       if (errName.includes('Index') || fullText.includes('out of range') || fullText.includes('out of bounds')) {
         return `\`\`\`python\n- # Offending array indexing at ${detectedFile}:${detectedLine}\n- item = items[index]\n+ # Autonomous TraceCinder Remediation Guard: Bounds validation\n+ item = items[index] if (0 <= index < len(items)) else None\n\`\`\``;
       }
 
-      // 6. Generic graceful degradation fallback
+      // 7. Generic language-matched graceful degradation fallback
+      if (isJsTs) {
+        return `\`\`\`typescript\n- // Offending execution frame in ${detectedFile}:${detectedLine}\n- return executeOperation(request);\n+ // Autonomous TraceCinder Remediation Guard: Fault-tolerant execution\n+ try {\n+   return executeOperation(request);\n+ } catch (err) {\n+   console.warn("Graceful degradation fallback triggered:", err);\n+   return FALLBACK_RECOVERY_RESPONSE;\n+ }\n\`\`\``;
+      }
+
       return `\`\`\`python\n- # Offending execution frame in ${detectedFile}:${detectedLine}\n- raise ${errName}("${errMsg}")\n+ # Autonomous TraceCinder Remediation Guard: Fault-tolerant execution\n+ try:\n+     return execute_safely(operation)\n+ except ${errName} as exc:\n+     logger.error(f"Suppressed non-fatal ${errName}: {exc}")\n+     return FALLBACK_RECOVERY_RESPONSE\n\`\`\``;
     }
 
