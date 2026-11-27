@@ -421,6 +421,23 @@
       </div>
 
       <div class="space-y-4 text-xs">
+        <!-- GitHub Direct Issue / PR Importer -->
+        <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-950/80 border border-slate-300 dark:border-slate-800">
+          <div class="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+            <label class="text-slate-800 dark:text-slate-200 font-semibold uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+              <span>🐙</span> Direct GitHub Issue or PR Ingestion
+            </label>
+            <span class="text-[10px] text-cyan-600 dark:text-cyan-400 font-mono font-medium">Auto-fill logs, summary &amp; diff</span>
+          </div>
+          <div class="flex gap-2 flex-col sm:flex-row">
+            <input id="github-import-url" type="text" placeholder="e.g. https://github.com/facebook/react/issues/123 or owner/repo#42" class="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-slate-900 dark:text-slate-100 font-mono text-xs focus:outline-none focus:border-cyan-500 transition"/>
+            <button id="btn-github-fetch" type="button" onclick="fetchGitHubIssueDirectly()" class="px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 dark:bg-cyan-900/70 dark:hover:bg-cyan-800 border border-cyan-500 dark:border-cyan-700 text-white dark:text-cyan-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm whitespace-nowrap">
+              <span>⚡</span> <span>Fetch &amp; Auto-Fill</span>
+            </button>
+          </div>
+          <div id="github-import-status" class="hidden mt-1.5 text-[10px] font-mono"></div>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1 uppercase tracking-wider text-[10px]">Service Name</label>
@@ -1218,6 +1235,104 @@ TypeError: 'NoneType' object has no attribute 'strip'`
       }
 
       document.getElementById('rca-patch-container').innerHTML = renderColorCodedDiff(report.proposed_remediation);
+    }
+
+    // Direct GitHub Issue or Pull Request Fetcher & Auto-Filler
+    async function fetchGitHubIssueDirectly() {
+      const inputEl = document.getElementById('github-import-url');
+      const statusEl = document.getElementById('github-import-status');
+      const btnEl = document.getElementById('btn-github-fetch');
+      const rawInput = (inputEl.value || '').trim();
+
+      if (!rawInput) {
+        statusEl.className = "mt-1.5 text-[10px] font-mono text-rose-600 dark:text-rose-400";
+        statusEl.textContent = "⚠️ Please enter a GitHub issue or PR URL (e.g. https://github.com/facebook/react/issues/123)";
+        statusEl.classList.remove('hidden');
+        return;
+      }
+
+      const pattern = /(?:https?:\/\/github\.com\/)?([a-zA-Z0-9_\-\.]+)\/([a-zA-Z0-9_\-\.]+)(?:\/(?:issues|pull)\/|#)(\d+)/i;
+      const match = rawInput.match(pattern);
+
+      if (!match) {
+        statusEl.className = "mt-1.5 text-[10px] font-mono text-rose-600 dark:text-rose-400";
+        statusEl.textContent = "⚠️ Invalid format. Use 'owner/repo#123' or 'https://github.com/owner/repo/issues/123'";
+        statusEl.classList.remove('hidden');
+        return;
+      }
+
+      const [, owner, repo, numStr] = match;
+      const issueNum = parseInt(numStr, 10);
+
+      btnEl.disabled = true;
+      btnEl.innerHTML = `<span class="animate-spin inline-block">⏳</span> <span>Fetching...</span>`;
+      statusEl.className = "mt-1.5 text-[10px] font-mono text-cyan-700 dark:text-cyan-400";
+      statusEl.textContent = `Connecting to GitHub API for ${owner}/${repo} #${issueNum}...`;
+      statusEl.classList.remove('hidden');
+
+      try {
+        const issueRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues/${issueNum}`);
+        if (!issueRes.ok) {
+          throw new Error(`GitHub API HTTP ${issueRes.status}: ${issueRes.statusText}`);
+        }
+        const issueData = await issueRes.json();
+
+        // 1. Service Name
+        const serviceInput = document.getElementById('custom-service');
+        serviceInput.value = `${owner}/${repo}`;
+
+        // 2. Incident Summary
+        const summaryInput = document.getElementById('custom-summary');
+        summaryInput.value = `#${issueNum}: ${issueData.title}`;
+
+        // 3. Raw Logs / Description
+        let logsContent = issueData.body || "";
+        try {
+          if (issueData.comments > 0) {
+            const commentsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues/${issueNum}/comments?per_page=3`);
+            if (commentsRes.ok) {
+              const commentsData = await commentsRes.json();
+              if (commentsData.length > 0) {
+                logsContent += "\n\n--- Issue Discussion / Telemetry Context ---\n" + commentsData.map(c => `[${c.user ? c.user.login : 'user'}]: ${c.body}`).join("\n\n");
+              }
+            }
+          }
+        } catch (commentErr) {
+          console.warn("Could not fetch comments:", commentErr);
+        }
+
+        const logsInput = document.getElementById('custom-logs');
+        logsInput.value = logsContent.trim() || `Issue #${issueNum} in ${owner}/${repo}: ${issueData.title}\n(No description provided in issue body)`;
+
+        // 4. If Pull Request, fetch the diff directly via GitHub API
+        let diffFetched = false;
+        if (issueData.pull_request) {
+          statusEl.textContent = `Fetching PR git diff from ${owner}/${repo}...`;
+          try {
+            const diffRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${issueNum}`, {
+              headers: { 'Accept': 'application/vnd.github.v3.diff' }
+            });
+            if (diffRes.ok) {
+              const diffText = await diffRes.text();
+              const diffInput = document.getElementById('custom-diff');
+              diffInput.value = diffText;
+              diffFetched = true;
+            }
+          } catch (diffErr) {
+            console.warn("Could not fetch PR diff:", diffErr);
+          }
+        }
+
+        statusEl.className = "mt-1.5 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold";
+        statusEl.textContent = `✅ Successfully imported ${owner}/${repo}#${issueNum} (${issueData.title})${diffFetched ? ' with PR diff' : ''}!`;
+
+      } catch (err) {
+        statusEl.className = "mt-1.5 text-[10px] font-mono text-rose-600 dark:text-rose-400";
+        statusEl.textContent = `❌ Import failed: ${err.message}. For private repositories, use the IDE MCP Server or paste manually.`;
+      } finally {
+        btnEl.disabled = false;
+        btnEl.innerHTML = `<span>⚡</span> <span>Fetch &amp; Auto-Fill</span>`;
+      }
     }
 
     async function submitCustomIncident() {
