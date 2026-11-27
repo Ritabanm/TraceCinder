@@ -16,6 +16,7 @@ In modern distributed systems, production incidents leave breadcrumbs across dis
 1. **Raw Telemetry & Execution Logs** (Gigabytes of noisy stack traces, HTTP 500 bursts, trace IDs)
 2. **Git Commit Diffs** (PRs merged minutes before the outage)
 3. **Multimodal UI Artifacts** (User bug screenshots, spinning loaders, broken error modals, console screen clips)
+4. **Native Engineer Voice Notes** (Spoken symptom descriptions & intended behavior recorded on-call via `input_audio`)
 
 Running frontier models (e.g. Claude 3.5 Sonnet or GPT-4o) across continuous telemetry streams costs \$50–\$200/day—making autonomous incident triage cost-prohibitive.
 
@@ -76,12 +77,13 @@ Parses arbitrary megabyte log files, identifies anomaly bursts (panics, HTTP 5xx
 TraceCinder requires zero external dependencies (Python 3.9+ standard library) for immediate verification.
 
 ### 1. Headless CI Remediation Triage (Primary Interface)
-Run direct incident triage from raw telemetry files and git diffs:
+Run direct incident triage from raw telemetry files, git diffs, screenshots, and voice notes:
 ```bash
 python main.py triage \
   --logs incidents/sample_checkout_break/telemetry.log \
   --diff incidents/sample_checkout_break/recent.patch \
-  --screen incidents/sample_checkout_break/failure_screen.svg
+  --screen incidents/sample_checkout_break/failure_screen.png \
+  --audio incidents/sample_checkout_break/incident_note.wav
 ```
 
 ### 2. Verify Generated Patch Artifacts
