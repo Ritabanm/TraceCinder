@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional
 from tracecinder.budget import BudgetLedger
 from tracecinder.chunker import TelemetryChunker
 from tracecinder.escalator import ReasoningEscalator
-from tracecinder.git_connector import LocalGitConnector
+from tracecinder.git_connector import LocalGitConnector, parse_github_ref
 from tracecinder.ide_connector import IDEConnector
 from tracecinder.models import EscalationTier, IncidentBundle, IncidentSeverity
 from tracecinder.provider import MuseEmberProvider
@@ -217,6 +217,14 @@ class TraceCinderMCPServer:
                             "type": "string",
                             "description": "Optional explicit Git diff. If omitted, automatically reads local git working tree diff.",
                         },
+                        "github_pr": {
+                            "type": "string",
+                            "description": "Optional GitHub PR reference (e.g. 'owner/repo#42' or full URL) to fetch PR diff automatically.",
+                        },
+                        "github_issue": {
+                            "type": "string",
+                            "description": "Optional GitHub Issue reference (e.g. 'owner/repo#10' or full URL) to fetch issue description and context.",
+                        },
                     },
                     "required": [],
                 },
@@ -313,18 +321,36 @@ class TraceCinderMCPServer:
             else:
                 combined_logs = "Runtime anomaly: Unhandled exception detected in active workspace."
 
+        dev_intent = args.get("developer_intent")
+
+        # Check for remote GitHub Issue lookup
+        github_issue_ref = args.get("github_issue") or args.get("issue_url")
+        if github_issue_ref:
+            owner, repo, issue_num = parse_github_ref(github_issue_ref)
+            if owner and repo and issue_num and hasattr(self.git_connector.remote_adapter, "get_issue"):
+                issue_data = self.git_connector.remote_adapter.get_issue(owner, repo, issue_num)
+                if issue_data:
+                    dev_intent = f"GitHub Issue #{issue_num}: {issue_data['title']}\n{issue_data['body']}"
+                    combined_logs = f"=== GITHUB ISSUE #{issue_num}: {issue_data['title']} ===\n{issue_data['body']}\n\n" + combined_logs
+
         # Prune log if approaching ceiling
         bounded_logs = self.chunker.extract_anomaly_window(combined_logs)
 
-        # Developer Intent
-        dev_intent = args.get("developer_intent")
+        # Developer Intent fallback to active context
         if not dev_intent:
             dev_intent = self.ide_connector.get_context().developer_intent
 
         voice_notes = args.get("voice_transcript")
 
-        # Git diff handling (local working tree or explicit)
+        # Git diff handling (local working tree, remote PR, or explicit diff)
         raw_diff = args.get("git_diff")
+        if not raw_diff:
+            github_pr_ref = args.get("github_pr") or args.get("pr_url")
+            if github_pr_ref:
+                owner, repo, pr_num = parse_github_ref(github_pr_ref)
+                if owner and repo and pr_num and hasattr(self.git_connector.remote_adapter, "get_pull_request_diff"):
+                    raw_diff = self.git_connector.remote_adapter.get_pull_request_diff(owner, repo, pr_num) or ""
+
         if not raw_diff:
             wt = self.git_connector.get_working_tree_diff(commit_limit=3)
             raw_diff = wt.full_diff

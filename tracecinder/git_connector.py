@@ -102,6 +102,36 @@ class GitHubAdapter(RemoteGitAdapter):
         except Exception:
             return None
 
+    def get_issue(self, repo_owner: str, repo_name: str, issue_number: int) -> Optional[Dict[str, Any]]:
+        """Fetch issue title, body, and state from GitHub REST API."""
+        url = f"{self.base_url}/repos/{repo_owner}/{repo_name}/issues/{issue_number}"
+        req = urllib.request.Request(url, headers=self._headers())
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                return {
+                    "title": data.get("title", ""),
+                    "body": data.get("body", ""),
+                    "state": data.get("state", "open"),
+                    "html_url": data.get("html_url", ""),
+                }
+        except Exception:
+            return None
+
+
+def parse_github_ref(ref: str) -> Tuple[Optional[str], Optional[str], Optional[int]]:
+    """
+    Parses owner, repo, and issue/PR number from a string reference or URL.
+    Supports:
+      - 'owner/repo#123'
+      - 'https://github.com/owner/repo/issues/123'
+      - 'https://github.com/owner/repo/pull/456'
+    """
+    m = re.search(r'(?:https?://github\.com/)?([a-zA-Z0-9_\-\.]+)/([a-zA-Z0-9_\-\.]+)(?:/(?:issues|pulls?)/|#)(\d+)', str(ref))
+    if m:
+        return m.group(1), m.group(2), int(m.group(3))
+    return None, None, None
+
 
 class GitLabAdapter(RemoteGitAdapter):
     """GitLab REST API adapter for MR and commit lookups via PAT or OAuth."""
