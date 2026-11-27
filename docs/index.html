@@ -21,58 +21,107 @@
     }
   </script>
   <style>
-    body { background-color: #080c14; }
-    .glass { background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
-    .glass-card { background: rgba(30, 41, 59, 0.45); border: 1px solid rgba(255, 255, 255, 0.07); }
-    .glow-rose { box-shadow: 0 0 25px -5px rgba(244, 63, 94, 0.25); }
-    .glow-cyan { box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.25); }
+    :root {
+      --bg-color: #f1f5f9;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --glass-bg: rgba(255, 255, 255, 0.94);
+      --glass-border: rgba(203, 213, 225, 0.85);
+      --glass-card: rgba(248, 250, 252, 0.95);
+      --glass-card-border: rgba(226, 232, 240, 0.9);
+      --shadow-style: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+    }
+    html.dark {
+      --bg-color: #080c14;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --glass-bg: rgba(15, 23, 42, 0.78);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-card: rgba(30, 41, 59, 0.45);
+      --glass-card-border: rgba(255, 255, 255, 0.07);
+      --shadow-style: 0 0 25px -5px rgba(244, 63, 94, 0.22);
+    }
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+    .glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-style);
+      transition: background 0.25s ease, border-color 0.25s ease;
+    }
+    .glass-card {
+      background: var(--glass-card);
+      border: 1px solid var(--glass-card-border);
+      transition: background 0.25s ease, border-color 0.25s ease;
+    }
+    .glow-rose { box-shadow: 0 0 25px -5px rgba(244, 63, 94, 0.2); }
+    .glow-cyan { box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.2); }
     .dropzone-active { border-color: #ec4899 !important; background: rgba(236, 72, 153, 0.1) !important; }
   </style>
 </head>
-<body class="text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-pink-500 selection:text-white">
+<body class="font-sans antialiased min-h-screen flex flex-col selection:bg-pink-500 selection:text-white">
 
   <!-- Top Navigation & Live Budget Bar -->
-  <header class="glass sticky top-0 z-50 border-b border-slate-800/80 px-6 py-3.5">
-    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+  <header class="glass sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800/80 px-6 py-3">
+    <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-4">
       <div class="flex items-center gap-3.5">
         <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-600 via-rose-500 to-amber-400 flex items-center justify-center font-black text-white shadow-lg shadow-pink-600/30 text-xl">
           🔥
         </div>
         <div>
-          <div class="flex items-center gap-2.5">
-            <span class="font-extrabold text-xl tracking-tight bg-gradient-to-r from-pink-400 via-rose-300 to-amber-200 bg-clip-text text-transparent">TraceCinder</span>
-            <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-800/80 border border-slate-700 text-slate-300">muse-ember-1.0</span>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950/70 border border-emerald-800 text-emerald-300">Prefix Caching Enabled</span>
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <span class="font-extrabold text-xl tracking-tight bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 dark:from-pink-400 dark:via-rose-300 dark:to-amber-200 bg-clip-text text-transparent">TraceCinder</span>
+            <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300">muse-ember-1.0</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-semibold">⚡ 75% Cost Reduction via Prefix Caching</span>
           </div>
-          <p class="text-xs text-slate-400">Autonomous CI/Incident Remediation Runtime • <span id="runtime-mode-badge" class="text-cyan-400 font-mono">Live Demo</span></p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Autonomous Incident Debugger & Remediation Engine • <span id="runtime-mode-badge" class="text-cyan-600 dark:text-cyan-400 font-mono">Live Demo</span></p>
         </div>
       </div>
 
-      <!-- Budget Controller Bar -->
-      <div class="flex items-center gap-5 bg-slate-900/90 border border-slate-800 rounded-xl px-5 py-2.5 shadow-lg">
-        <div>
-          <div class="flex justify-between items-center text-xs mb-1.5 gap-4">
-            <span class="text-slate-400 text-[11px] font-medium uppercase tracking-wider">Credit Burn ($10.00 Cap)</span>
-            <span id="budget-spent" class="font-mono text-emerald-400 font-bold">$0.0000</span>
+      <!-- Right Controls: Budget Bar + Connect IDE + Theme Toggle -->
+      <div class="flex items-center gap-3 flex-wrap justify-end">
+        <!-- Budget Controller Bar -->
+        <div class="flex items-center gap-4 bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 shadow-sm">
+          <div>
+            <div class="flex justify-between items-center text-xs mb-1 gap-3">
+              <span class="text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider">Budget Used ($10 Limit)</span>
+              <span id="budget-spent" class="font-mono text-emerald-600 dark:text-emerald-400 font-bold">$0.0000</span>
+            </div>
+            <div class="w-36 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-300 dark:border-slate-700/80">
+              <div id="budget-progress" class="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400 transition-all duration-500" style="width: 0.1%"></div>
+            </div>
           </div>
-          <div class="w-44 h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700/80">
-            <div id="budget-progress" class="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400 transition-all duration-500" style="width: 0.1%"></div>
+
+          <div class="h-6 w-px bg-slate-200 dark:bg-slate-800"></div>
+
+          <div class="text-left font-mono">
+            <div class="text-[9px] text-slate-500 uppercase tracking-wider">Cache Savings</div>
+            <div id="cached-tokens" class="text-xs font-bold text-cyan-600 dark:text-cyan-400">0 tokens</div>
+          </div>
+
+          <div class="h-6 w-px bg-slate-200 dark:bg-slate-800"></div>
+
+          <div class="text-left font-mono">
+            <div class="text-[9px] text-slate-500 uppercase tracking-wider">Remaining</div>
+            <div id="remaining-budget" class="text-xs font-bold text-slate-700 dark:text-slate-200">$10.0000</div>
           </div>
         </div>
 
-        <div class="h-7 w-px bg-slate-800"></div>
+        <!-- Connect IDE Button -->
+        <button onclick="openMcpModal()" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/90 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-xs font-mono text-cyan-600 dark:text-cyan-300 font-semibold flex items-center gap-1.5 shadow-sm active:scale-95 transition" title="Connect to Cursor, Antigravity, VS Code, or Claude Code">
+          <span>🔌</span>
+          <span>Connect IDE (MCP)</span>
+        </button>
 
-        <div class="text-left font-mono">
-          <div class="text-[10px] text-slate-500 uppercase tracking-wider">Cache Savings</div>
-          <div id="cached-tokens" class="text-xs font-bold text-cyan-400">0 tokens</div>
-        </div>
-
-        <div class="h-7 w-px bg-slate-800"></div>
-
-        <div class="text-left font-mono">
-          <div class="text-[10px] text-slate-500 uppercase tracking-wider">Remaining Cap</div>
-          <div id="remaining-budget" class="text-xs font-bold text-slate-200">$10.0000</div>
-        </div>
+        <!-- Day / Night Theme Toggle -->
+        <button id="theme-toggle-btn" onclick="toggleTheme()" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/90 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-xs font-mono text-slate-700 dark:text-slate-300 flex items-center gap-1.5 shadow-sm active:scale-95 transition" title="Toggle Day / Night Theme">
+          <span id="theme-toggle-icon">☀️</span>
+          <span id="theme-toggle-label">Light</span>
+        </button>
       </div>
     </div>
   </header>
@@ -80,56 +129,57 @@
   <!-- Main Workspace -->
   <main class="max-w-7xl mx-auto w-full flex-1 p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-    <!-- Left Column: Active Incidents Feed & Modality Picker -->
-    <div class="lg:col-span-4 space-y-4">
+    <!-- Left Column: Incident Selector & Attached Evidence -->
+    <div class="lg:col-span-5 space-y-4">
+      <!-- Card 1: Select Incident -->
       <div class="glass rounded-2xl p-5 glow-rose">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span> Telemetry Feed
+          <h2 class="text-xs font-bold uppercase tracking-wider flex items-center gap-2 text-slate-800 dark:text-slate-200">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span> 1. Select Incident
           </h2>
-          <span id="feed-count-badge" class="text-[11px] px-2 py-0.5 rounded-full bg-slate-800/80 text-slate-400 font-mono">2 Samples Ready</span>
+          <span id="feed-count-badge" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800/80 text-slate-700 dark:text-slate-400 font-mono font-semibold">2 Ready</span>
         </div>
 
         <!-- Incident Selector Cards Split into Active vs Pre-Loaded -->
-        <div class="space-y-4 max-h-[380px] overflow-y-auto pr-1">
+        <div class="space-y-4 max-h-[340px] overflow-y-auto pr-1">
           <!-- Section 1: Active Custom Ingested Incidents -->
           <div>
-            <div class="text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-semibold mb-1.5 flex items-center justify-between">
-              <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span> Active Custom Incidents</span>
+            <div class="text-[10px] font-mono uppercase tracking-wider text-cyan-600 dark:text-cyan-400 font-semibold mb-1.5 flex items-center justify-between">
+              <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span> Custom Bug Reports</span>
               <span id="active-count" class="text-[9px] text-slate-500 font-mono">0 Active</span>
             </div>
             <div id="custom-incident-list" class="space-y-2">
-              <div id="custom-empty-state" class="p-2.5 rounded-xl border border-dashed border-slate-800 text-center text-[10px] text-slate-500 font-mono">
-                No custom uploads yet. Click "+ New Custom Triage" below.
+              <div id="custom-empty-state" class="p-2.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 text-center text-[10px] text-slate-500 font-mono">
+                No custom uploads yet. Click "+ Upload Custom Bug" below.
               </div>
             </div>
           </div>
 
           <!-- Section 2: Pre-Loaded Benchmark Samples -->
           <div>
-            <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold mb-1.5 flex items-center justify-between">
-              <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Pre-Loaded Benchmark Samples</span>
+            <div class="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mb-1.5 flex items-center justify-between">
+              <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500"></span> Benchmark Incident Datasets</span>
               <span class="text-[9px] text-slate-500 font-mono">2 Datasets</span>
             </div>
             <div class="space-y-2" id="sample-incident-list">
               <!-- Card 1 -->
               <div onclick="selectIncident('sample_checkout_break')" id="card-sample_checkout_break" class="glass-card rounded-xl p-3 border-l-4 border-l-rose-500 hover:border-pink-500 cursor-pointer transition ring-1 ring-rose-500/30">
                 <div class="flex items-center justify-between mb-1">
-                  <span class="font-mono text-xs font-bold text-rose-400">INC-2026-9041</span>
-                  <span class="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-rose-950/80 border border-rose-800 text-rose-300">BENCHMARK</span>
+                  <span class="font-mono text-xs font-bold text-rose-500 dark:text-rose-400">INC-2026-9041</span>
+                  <span class="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950/80 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300">BENCHMARK</span>
                 </div>
-                <h3 class="text-xs font-semibold text-slate-200 mb-0.5">Checkout Session 500 Burst</h3>
-                <p class="text-[11px] text-slate-400">checkout-gateway • Avatar Serializer</p>
+                <h3 class="text-xs font-semibold text-slate-800 dark:text-slate-200 mb-0.5">Checkout Session 500 Burst</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">checkout-gateway • Avatar Serializer</p>
               </div>
 
               <!-- Card 2 -->
               <div onclick="selectIncident('sample_auth_token_loop')" id="card-sample_auth_token_loop" class="glass-card rounded-xl p-3 border-l-4 border-l-amber-500 hover:border-amber-400 cursor-pointer transition">
                 <div class="flex items-center justify-between mb-1">
-                  <span class="font-mono text-xs font-bold text-amber-400">INC-2026-9042</span>
-                  <span class="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-800 text-amber-300">BENCHMARK</span>
+                  <span class="font-mono text-xs font-bold text-amber-500 dark:text-amber-400">INC-2026-9042</span>
+                  <span class="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300">BENCHMARK</span>
                 </div>
-                <h3 class="text-xs font-semibold text-slate-200 mb-0.5">Auth 429 Retry Storm</h3>
-                <p class="text-[11px] text-slate-400">auth-gateway • Token Interceptor</p>
+                <h3 class="text-xs font-semibold text-slate-800 dark:text-slate-200 mb-0.5">Auth 429 Retry Storm</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">auth-gateway • Token Interceptor</p>
               </div>
             </div>
           </div>
@@ -137,167 +187,157 @@
 
         <!-- Action Buttons: Run Triage + New Custom Triage -->
         <div class="mt-4 grid grid-cols-2 gap-2.5">
-          <button id="btn-triage" onclick="runTriage()" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-pink-600 via-rose-500 to-amber-500 hover:opacity-95 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-pink-600/30 active:scale-95 transition">
+          <button id="btn-triage" onclick="runTriage()" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-pink-600 via-rose-500 to-amber-500 hover:opacity-95 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-pink-600/25 active:scale-95 transition">
             <span id="btn-icon">⚡</span>
-            <span id="btn-text">Run Triage</span>
+            <span id="btn-text">Run Automated Triage</span>
           </button>
 
-          <button onclick="openCustomModal()" class="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700/80 text-pink-300 hover:text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow active:scale-95 transition">
+          <button onclick="openCustomModal()" class="w-full py-2.5 px-3 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700/80 text-pink-600 dark:text-pink-300 font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition">
             <span>➕</span>
-            <span>New Custom Triage</span>
+            <span>Upload Custom Bug</span>
           </button>
         </div>
       </div>
 
-      <!-- Multi-Modal Ingestion Assets Preview Box -->
+      <!-- Card 2: Attached Evidence & Files Box with Integrated MCP Status -->
       <div class="glass rounded-2xl p-5">
-        <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3 flex items-center justify-between">
-          <span>Multimodal Ingestion Assets</span>
-          <button onclick="toggleLogViewer()" class="text-[10px] text-cyan-400 hover:underline font-mono">View Raw Log</button>
+        <h2 class="text-xs font-bold uppercase tracking-wider mb-3 flex items-center justify-between text-slate-800 dark:text-slate-300">
+          <span class="flex items-center gap-1.5"><span>📁</span> Attached Evidence &amp; Context</span>
+          <button onclick="toggleLogViewer()" class="text-[10px] text-cyan-600 dark:text-cyan-400 hover:underline font-mono">View Raw Log</button>
         </h2>
-        <div class="space-y-2.5 text-xs font-mono">
-          <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/70 border border-slate-800">
-            <div class="flex items-center gap-2 text-slate-300 truncate">
+        <div class="space-y-2 text-xs font-mono">
+          <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-2 text-slate-700 dark:text-slate-300 truncate">
               <span>📄</span>
-              <span id="label-log" class="truncate">telemetry.log</span>
+              <span id="label-log" class="truncate font-semibold">telemetry.log</span>
             </div>
-            <span class="text-slate-500 text-[10px] whitespace-nowrap">&lt;200K bounded</span>
+            <span class="text-slate-500 text-[10px] whitespace-nowrap">&lt;200K log window</span>
           </div>
-          <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/70 border border-slate-800">
-            <div class="flex items-center gap-2 text-slate-300 truncate">
+          <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-2 text-slate-700 dark:text-slate-300 truncate">
               <span>🔀</span>
-              <span id="label-diff" class="truncate">recent.patch</span>
+              <span id="label-diff" class="truncate font-semibold">recent.patch</span>
             </div>
-            <span class="text-slate-500 text-[10px] whitespace-nowrap">git commit diff</span>
+            <span class="text-slate-500 text-[10px] whitespace-nowrap">Git commit diff</span>
           </div>
-          <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/70 border border-slate-800">
-            <div class="flex items-center gap-2 text-slate-300 truncate">
+          <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-2 text-slate-700 dark:text-slate-300 truncate">
               <span>🖼</span>
-              <span id="label-screen" class="truncate">failure_screen.svg</span>
+              <span id="label-screen" class="truncate font-semibold">failure_screen.svg</span>
             </div>
-            <span class="text-pink-400 text-[10px] whitespace-nowrap">DevTools Capture</span>
+            <span class="text-pink-600 dark:text-pink-400 text-[10px] whitespace-nowrap">DevTools Screenshot</span>
           </div>
-          <div id="row-audio-asset" class="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/70 border border-slate-800">
-            <div class="flex items-center gap-2 text-slate-300 truncate">
+          <div id="row-audio-asset" class="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-2 text-slate-700 dark:text-slate-300 truncate">
               <span>🎙</span>
-              <span id="label-audio" class="truncate">incident_note.wav</span>
+              <span id="label-audio" class="truncate font-semibold">incident_note.wav</span>
             </div>
-            <span id="badge-audio-fmt" class="text-cyan-400 text-[10px] whitespace-nowrap font-semibold">audio/ember-native</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Model Context Protocol (MCP) Server Card -->
-      <div class="glass rounded-2xl p-5 glow-cyan border border-slate-800/80">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-            <span class="text-cyan-400">🔌</span> IDE / Git MCP Server
-          </h2>
-          <span class="text-[9px] px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-800 text-emerald-300 font-mono">stdio active</span>
-        </div>
-
-        <p class="text-[11px] text-slate-400 mb-3 leading-relaxed">
-          Connect TraceCinder to Cursor, Antigravity, or VS Code to query real-time AST diffs, stack traces, and verified draft patches directly in your editor.
-        </p>
-
-        <!-- Server Spec Pills -->
-        <div class="bg-slate-950/80 rounded-xl p-3 border border-slate-800/80 font-mono text-[11px] space-y-1.5 mb-3">
-          <div class="flex items-center justify-between">
-            <span class="text-slate-500">Server:</span>
-            <span class="text-slate-200 font-semibold select-all">tracecinder</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-slate-500">Command:</span>
-            <span class="text-cyan-400 select-all font-semibold">cinder-mcp</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-slate-500">Args:</span>
-            <span class="text-slate-300 select-all">--workspace .</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-slate-500">Transport:</span>
-            <span class="text-pink-400">stdio (JSON-RPC 2.0)</span>
+            <span id="badge-audio-fmt" class="text-cyan-600 dark:text-cyan-400 text-[10px] whitespace-nowrap font-semibold">audio/ember-native</span>
           </div>
         </div>
 
-        <!-- Quick Copy Actions -->
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="copyMcpConfig('cursor')" class="py-1.5 px-2.5 rounded-lg bg-slate-800/90 hover:bg-slate-750 border border-slate-700/80 text-cyan-300 hover:text-white text-[11px] font-mono flex items-center justify-center gap-1.5 transition">
-            <span>📋</span>
-            <span id="btn-copy-cursor">Copy Cursor JSON</span>
-          </button>
-          <button onclick="openMcpModal()" class="py-1.5 px-2.5 rounded-lg bg-slate-800/90 hover:bg-slate-750 border border-slate-700/80 text-pink-300 hover:text-white text-[11px] font-mono flex items-center justify-center gap-1.5 transition">
-            <span>⚙️</span>
-            <span>Connect IDE</span>
+        <!-- Integrated MCP Status Footer -->
+        <div class="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
+          <div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>IDE MCP Server Active</span>
+          </div>
+          <button onclick="openMcpModal()" class="text-cyan-600 dark:text-cyan-400 hover:underline font-semibold flex items-center gap-1">
+            <span>Connect IDE</span> &rarr;
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Right Column: Escalation Pipeline & Results -->
-    <div class="lg:col-span-8 space-y-6">
+    <!-- Right Column: Investigation Pipeline & Results -->
+    <div class="lg:col-span-7 space-y-5">
 
       <!-- Dynamic Reasoning Escalation Timeline -->
-      <div class="glass rounded-2xl p-6 glow-cyan">
-        <div class="flex items-center justify-between mb-5">
-          <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-            <span>🧠</span> Dynamic Minimal &rarr; Max Reasoning Escalation
-          </h2>
-          <span class="text-[11px] font-mono text-slate-400">3-Tier Escalator</span>
+      <div class="glass rounded-2xl p-5 glow-cyan">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider flex items-center gap-2 text-slate-800 dark:text-slate-200">
+              <span>🧠</span> 2. Autonomous 3-Step Root Cause Analysis
+            </h2>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Dynamic minimal &rarr; max reasoning escalation via muse-ember-1.0</p>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold">3-Tier Pipeline</span>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5" id="timeline-container">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="timeline-container">
           <!-- Tier 1 -->
-          <div id="card-tier1" class="glass-card rounded-xl p-4 border border-slate-800 transition">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-[11px] font-mono font-bold text-blue-400">TIER 1: PULSE</span>
-              <span id="badge-tier1" class="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">READY</span>
+          <div id="card-tier1" class="glass-card rounded-xl p-3.5 border border-slate-200 dark:border-slate-800 transition">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[11px] font-mono font-bold text-blue-600 dark:text-blue-400">STEP 1: LOG SCAN</span>
+              <span id="badge-tier1" class="text-[9px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono font-semibold">READY</span>
             </div>
-            <div class="text-xs text-slate-200 font-semibold mb-1">Log Fingerprint</div>
-            <div class="text-[11px] text-slate-400 leading-relaxed" id="desc-tier1">Isolates stack trace and anomaly burst under 200K tokens.</div>
-            <div class="mt-3 text-[10px] font-mono text-slate-500" id="cost-tier1">Est: ~$0.0001</div>
+            <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 mb-1">Stack Diagnosis</div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed" id="desc-tier1">Scans error logs &amp; isolates stack trace anomaly window.</div>
+            <div class="mt-2 text-[10px] font-mono text-slate-500" id="cost-tier1">Est: ~$0.0001</div>
           </div>
 
           <!-- Tier 2 -->
-          <div id="card-tier2" class="glass-card rounded-xl p-4 border border-slate-800 transition">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-[11px] font-mono font-bold text-amber-400">TIER 2: DIFF</span>
-              <span id="badge-tier2" class="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">READY</span>
+          <div id="card-tier2" class="glass-card rounded-xl p-3.5 border border-slate-200 dark:border-slate-800 transition">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[11px] font-mono font-bold text-amber-600 dark:text-amber-400">STEP 2: CODE DIFF</span>
+              <span id="badge-tier2" class="text-[9px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono font-semibold">READY</span>
             </div>
-            <div class="text-xs text-slate-200 font-semibold mb-1">Git PR Correlator</div>
-            <div class="text-[11px] text-slate-400 leading-relaxed" id="desc-tier2">Cross-references trace with recent commit AST changes.</div>
-            <div class="mt-3 text-[10px] font-mono text-slate-500" id="cost-tier2">Est: ~$0.00015</div>
+            <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 mb-1">Git Commit Match</div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed" id="desc-tier2">Maps failure lines to recent Git commit changes.</div>
+            <div class="mt-2 text-[10px] font-mono text-slate-500" id="cost-tier2">Est: ~$0.00015</div>
           </div>
 
           <!-- Tier 3 -->
-          <div id="card-tier3" class="glass-card rounded-xl p-4 border border-slate-800 transition">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-[11px] font-mono font-bold text-pink-400">TIER 3: MULTIMODAL</span>
-              <span id="badge-tier3" class="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">READY</span>
+          <div id="card-tier3" class="glass-card rounded-xl p-3.5 border border-slate-200 dark:border-slate-800 transition">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[11px] font-mono font-bold text-pink-600 dark:text-pink-400">STEP 3: MULTIMODAL</span>
+              <span id="badge-tier3" class="text-[9px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono font-semibold">READY</span>
             </div>
-            <div class="text-xs text-slate-200 font-semibold mb-1">Visual RCA & Patch</div>
-            <div class="text-[11px] text-slate-400 leading-relaxed" id="desc-tier3">Inspects DevTools capture, verifies syntax with ast.parse.</div>
-            <div class="mt-3 text-[10px] font-mono text-slate-500" id="cost-tier3">Est: ~$0.0002</div>
+            <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 mb-1">Visual &amp; Voice Synthesis</div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed" id="desc-tier3">Inspects UI screenshot &amp; voice note to produce patch.</div>
+            <div class="mt-2 text-[10px] font-mono text-slate-500" id="cost-tier3">Est: ~$0.0002</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Investigation Placeholder State (Visible before triage runs) -->
+      <div id="rca-placeholder" class="glass rounded-2xl p-8 border border-slate-200 dark:border-slate-800 text-center">
+        <div class="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-tr from-pink-500/20 via-rose-500/20 to-cyan-500/20 border border-slate-300 dark:border-slate-700 flex items-center justify-center text-xl mb-3 shadow-inner">
+          🔍
+        </div>
+        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">Investigation Ready</h3>
+        <p class="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto mb-4 leading-relaxed">
+          Select an incident on the left and click <span class="font-semibold text-pink-600 dark:text-pink-400">&ldquo;Run Automated Triage&rdquo;</span> to execute the 3-step investigation pipeline on Meta <code class="font-mono text-cyan-600 dark:text-cyan-300">muse-ember-1.0</code>.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 max-w-lg mx-auto text-left font-mono text-[10px]">
+          <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-300">
+            <span class="text-emerald-500 font-bold">✔</span> <span>Log Anomaly Scan</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-300">
+            <span class="text-emerald-500 font-bold">✔</span> <span>Git Commit Match</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-300">
+            <span class="text-emerald-500 font-bold">✔</span> <span>Verified Code Patch</span>
           </div>
         </div>
       </div>
 
       <!-- Root Cause Analysis Output Card -->
       <div id="rca-output" class="glass rounded-2xl p-6 hidden">
-        <div class="flex items-start justify-between border-b border-slate-800/80 pb-4 mb-5 gap-4">
+        <div class="flex items-start justify-between border-b border-slate-200 dark:border-slate-800/80 pb-4 mb-5 gap-4 flex-wrap sm:flex-nowrap">
           <div>
             <div class="flex items-center gap-2.5">
-              <span class="text-emerald-400 font-bold text-sm">✔ Root Cause Analysis Complete</span>
-              <span id="rca-confidence" class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-800 text-emerald-300 font-mono font-semibold">99% Confidence</span>
+              <span class="text-emerald-600 dark:text-emerald-400 font-bold text-sm">✔ Root Cause Analysis Complete</span>
+              <span id="rca-confidence" class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-mono font-semibold">99% Confidence</span>
             </div>
-            <p id="rca-subtitle" class="text-xs text-slate-400 mt-1">Cross-validated across telemetry logs, git commit diff, and UI failure screenshot.</p>
+            <p id="rca-subtitle" class="text-xs text-slate-500 dark:text-slate-400 mt-1">Cross-validated across telemetry logs, git commit diff, and UI failure screenshot.</p>
           </div>
           
-          <!-- Spend + Naive Comparison Badge -->
+          <!-- Spend + Comparison Badge -->
           <div class="text-right font-mono flex flex-col items-end">
-            <div class="text-slate-400 text-[11px]">Total Incident Spend</div>
-            <div id="rca-cost" class="text-emerald-400 font-bold text-sm leading-tight">$0.00047</div>
-            <div id="rca-savings-badge" class="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-900 border border-cyan-800/60 text-[10px] text-cyan-300 font-semibold font-mono shadow-sm">
+            <div class="text-slate-500 dark:text-slate-400 text-[11px]">Total Incident Spend</div>
+            <div id="rca-cost" class="text-emerald-600 dark:text-emerald-400 font-bold text-sm leading-tight">$0.00047</div>
+            <div id="rca-savings-badge" class="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-50 dark:bg-slate-900 border border-cyan-200 dark:border-cyan-800/60 text-[10px] text-cyan-700 dark:text-cyan-300 font-semibold font-mono shadow-sm">
               <span>⚡</span> <span id="savings-text">28x cheaper vs. $0.0132 naive max-effort</span>
             </div>
           </div>
@@ -306,63 +346,63 @@
         <!-- Diagnosed Root Cause & Correlated Code -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
           <div class="glass-card rounded-xl p-4">
-            <div class="text-[11px] uppercase tracking-wider font-semibold text-slate-400 mb-2 flex items-center gap-1.5">
+            <div class="text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
               <span>🎯</span> Diagnosed Root Cause
             </div>
-            <p class="text-xs text-slate-200 leading-relaxed" id="rca-diagnosis">-</p>
+            <p class="text-xs text-slate-800 dark:text-slate-200 leading-relaxed font-sans" id="rca-diagnosis">-</p>
           </div>
 
           <div class="glass-card rounded-xl p-4">
-            <div class="text-[11px] uppercase tracking-wider font-semibold text-slate-400 mb-2 flex items-center gap-1.5">
-              <span>📍</span> Correlated Code & Lines
+            <div class="text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
+              <span>📍</span> Correlated Code &amp; Lines
             </div>
-            <div class="font-mono text-xs text-cyan-300 font-semibold mb-1" id="rca-file">-</div>
-            <div class="font-mono text-xs text-amber-300" id="rca-lines">-</div>
+            <div class="font-mono text-xs text-cyan-600 dark:text-cyan-300 font-semibold mb-1" id="rca-file">-</div>
+            <div class="font-mono text-xs text-amber-600 dark:text-amber-300" id="rca-lines">-</div>
           </div>
         </div>
 
         <!-- Multimodal Visual Screenshot Display (DevTools Capture) -->
         <div id="rca-visual-container" class="glass-card rounded-xl p-4 mb-5">
           <div class="flex items-center justify-between mb-3">
-            <div class="text-[11px] uppercase tracking-wider font-semibold text-slate-400 flex items-center gap-1.5">
+            <div class="text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
               <span>🖼</span> Multimodal Visual Inspection Artifact
             </div>
-            <span class="text-[10px] font-mono text-pink-400 bg-pink-950/60 border border-pink-800/60 px-2 py-0.5 rounded">Vision Anomaly Correlated</span>
+            <span class="text-[10px] font-mono text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/60 border border-pink-200 dark:border-pink-800/60 px-2 py-0.5 rounded font-semibold">Vision Anomaly Correlated</span>
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-            <div class="md:col-span-7 bg-slate-950 rounded-lg p-2 border border-slate-800">
+            <div class="md:col-span-7 bg-slate-900 rounded-lg p-2 border border-slate-300 dark:border-slate-800">
               <img id="rca-image" src="incidents/sample_checkout_break/failure_screen.svg" alt="Failure Visual" class="w-full h-auto max-h-[300px] object-contain rounded-md shadow-md"/>
             </div>
             <div class="md:col-span-5 space-y-2">
               <div class="text-[10px] uppercase font-mono text-slate-500">Vision Finding:</div>
-              <p class="text-xs text-pink-300 font-mono leading-relaxed bg-pink-950/30 p-3 rounded-lg border border-pink-900/40" id="rca-visual">-</p>
+              <p class="text-xs text-pink-700 dark:text-pink-300 font-mono leading-relaxed bg-pink-50 dark:bg-pink-950/30 p-3 rounded-lg border border-pink-200 dark:border-pink-900/40" id="rca-visual">-</p>
             </div>
           </div>
         </div>
 
         <!-- Multimodal Voice Note Alignment Display -->
-        <div id="rca-voice-container" class="glass-card rounded-xl p-4 mb-5 border-l-4 border-l-cyan-400">
+        <div id="rca-voice-container" class="glass-card rounded-xl p-4 mb-5 border-l-4 border-l-cyan-500">
           <div class="flex items-center justify-between mb-2">
-            <div class="text-[11px] uppercase tracking-wider font-semibold text-slate-400 flex items-center gap-1.5">
+            <div class="text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
               <span>🎙</span> Engineer Voice Context Alignment
             </div>
-            <span class="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800/60 px-2 py-0.5 rounded">Native Audio Ingested</span>
+            <span class="text-[10px] font-mono text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/60 px-2 py-0.5 rounded font-semibold">Native Audio Ingested</span>
           </div>
-          <p class="text-xs text-cyan-200 font-mono leading-relaxed bg-cyan-950/30 p-3 rounded-lg border border-cyan-900/40" id="rca-voice-text">-</p>
+          <p class="text-xs text-cyan-800 dark:text-cyan-200 font-mono leading-relaxed bg-cyan-50 dark:bg-cyan-950/30 p-3 rounded-lg border border-cyan-200 dark:border-cyan-900/40" id="rca-voice-text">-</p>
         </div>
 
         <!-- Proposed Code Remediation Patch with Clean Diff Lines -->
         <div class="glass-card rounded-xl p-4">
           <div class="flex items-center justify-between mb-2">
-            <div class="text-[11px] uppercase tracking-wider font-semibold text-slate-400 flex items-center gap-1.5">
-              <span>🛠</span> Proposed Atomic Code Remediation
+            <div class="text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <span>🛠</span> Proposed Code Fix (<span class="font-mono text-emerald-600 dark:text-emerald-400">remediation.patch</span>)
             </div>
-            <button onclick="copyPatch()" class="text-[11px] font-mono text-emerald-400 hover:text-emerald-300 px-2.5 py-1 rounded bg-slate-900 border border-slate-700 flex items-center gap-1.5 active:scale-95 transition">
+            <button onclick="copyPatch()" class="text-[11px] font-mono text-emerald-700 dark:text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-300 px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 flex items-center gap-1.5 active:scale-95 transition font-semibold">
               <span>📋</span> <span id="copy-btn-text">Copy Patch</span>
             </button>
           </div>
-          <div class="bg-slate-950 p-3.5 rounded-lg text-xs font-mono border border-slate-800/90 leading-relaxed overflow-x-auto" id="rca-patch-container"></div>
+          <div class="bg-slate-950 text-slate-100 p-3.5 rounded-lg text-xs font-mono border border-slate-800 leading-relaxed overflow-x-auto shadow-inner" id="rca-patch-container"></div>
         </div>
       </div>
 
@@ -674,9 +714,48 @@
       const code = MCP_SNIPPETS[type || 'cursor'].code;
       navigator.clipboard.writeText(code);
       const btn = document.getElementById('btn-copy-cursor');
-      btn.textContent = "Copied!";
-      setTimeout(() => { btn.textContent = "Copy Cursor JSON"; }, 2000);
+      if (btn) {
+        btn.textContent = "Copied!";
+        setTimeout(() => { btn.textContent = "Copy Cursor JSON"; }, 2000);
+      }
     }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.contains('dark');
+      if (isDark) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('tracecinder-theme', 'light');
+        const icon = document.getElementById('theme-toggle-icon');
+        const label = document.getElementById('theme-toggle-label');
+        if (icon) icon.textContent = '🌙';
+        if (label) label.textContent = 'Dark';
+      } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('tracecinder-theme', 'dark');
+        const icon = document.getElementById('theme-toggle-icon');
+        const label = document.getElementById('theme-toggle-label');
+        if (icon) icon.textContent = '☀️';
+        if (label) label.textContent = 'Light';
+      }
+    }
+
+    // Initialize Theme immediately
+    (function initTheme() {
+      const savedTheme = localStorage.getItem('tracecinder-theme');
+      if (savedTheme === 'light') {
+        document.documentElement.classList.remove('dark');
+        const icon = document.getElementById('theme-toggle-icon');
+        const label = document.getElementById('theme-toggle-label');
+        if (icon) icon.textContent = '🌙';
+        if (label) label.textContent = 'Dark';
+      } else {
+        document.documentElement.classList.add('dark');
+        const icon = document.getElementById('theme-toggle-icon');
+        const label = document.getElementById('theme-toggle-label');
+        if (icon) icon.textContent = '☀️';
+        if (label) label.textContent = 'Light';
+      }
+    })();
 
     // Built-in Database for Static Hosting (GitHub Pages compatibility)
     const STATIC_INCIDENTS = {
@@ -810,6 +889,8 @@ TypeError: 'NoneType' object has no attribute 'strip'`
       }
 
       document.getElementById('rca-output').classList.add('hidden');
+      const placeholder = document.getElementById('rca-placeholder');
+      if (placeholder) placeholder.classList.remove('hidden');
       resetTiers();
     }
 
@@ -1087,6 +1168,8 @@ TypeError: 'NoneType' object has no attribute 'strip'`
         document.getElementById('cost-tier3').textContent = "Saved: (No UI Visual)";
       }
 
+      const placeholder = document.getElementById('rca-placeholder');
+      if (placeholder) placeholder.classList.add('hidden');
       document.getElementById('rca-output').classList.remove('hidden');
       document.getElementById('rca-confidence').textContent = `${Math.round(report.confidence * 100)}% Confidence`;
       document.getElementById('rca-cost').textContent = `$${report.total_usage.cost_usd.toFixed(5)}`;
