@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "tracecinder": {
+      "command": "/Users/ritaban/TraceCinder/cinder-mcp",
+      "args": [
+        "--workspace",
+        "/Users/ritaban/TraceCinder"
+      ],
+      "env": {
+        "METAVR_DEBUG": "0"
+      }
+    }
+  }
+}
